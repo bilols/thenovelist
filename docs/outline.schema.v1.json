@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "outline.schema.json",
+  "title": "NovelOutline",
+  "type": "object",
+
+  "required": ["title", "chapters"],
+  "properties": {
+    "title": { "type": "string" },
+    "novel_target_words": { "type": "integer", "minimum": 10000 },
+    "themes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 2 },
+      "minItems": 1
+    },
+    "chapters": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["num", "title", "target_words", "beats"],
+        "properties": {
+          "num": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "target_words": { "type": "integer", "minimum": 500 },
+          "beats": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 3 },
+            "minItems": 3
+          }
+        }
+      }
+    }
+  }
+}
