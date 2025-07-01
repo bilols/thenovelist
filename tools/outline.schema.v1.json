@@ -1,21 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://novelist.ai/schemas/outline.schema.v1.json",
-  "title": "Novelist Story Outline (v1)",
-  "description": "Self‑contained data used to generate full chapters in multiple passes.",
+  "title": "Novelist Story Outline (v1)",
   "type": "object",
   "required": ["header", "outlineProgress", "premise", "chapters"],
   "additionalProperties": false,
 
   "definitions": {
+    "timestamp": { "type": "string", "format": "date-time" },
     "wordArray": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
       "minItems": 1
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time"
     }
   },
 
@@ -23,15 +19,12 @@
     "header": {
       "type": "object",
       "required": ["schemaVersion", "dateCreated"],
-      "additionalProperties": false,
       "properties": {
         "schemaVersion": { "type": "integer", "minimum": 1 },
-        "dateCreated": { "$ref": "#/definitions/timestamp" },
-        "projectFile": {
-          "type": "string",
-          "description": "Relative path to the originating project.json (for traceability)."
-        }
-      }
+        "dateCreated":   { "$ref": "#/definitions/timestamp" },
+        "projectFile":   { "type": "string" }
+      },
+      "additionalProperties": false
     },
 
     "outlineProgress": {
@@ -47,55 +40,52 @@
       ]
     },
 
-    "premise": { "type": "string", "minLength": 150 },
+    "premise":     { "type": "string", "minLength": 150 },
+    "famousAuthor":{ "type": ["object", "null"], "additionalProperties": true },
 
-    "famousAuthor": {
-      "description": "Complete payload from the referenced author preset, copied verbatim.",
-      "type": ["object", "null"],
-      "additionalProperties": true
+    "storyArc": {
+      "description": "High‑level multi‑act structure",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["act", "summary"],
+        "properties": {
+          "act":           { "type": "integer", "minimum": 1 },
+          "summary":       { "type": "string", "minLength": 10 },
+          "turningPoints": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
     },
 
     "characters": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "type": "object",
         "required": ["name", "role", "traits", "arc"],
-        "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "minLength": 1 },
-          "role": { "type": "string", "minLength": 1 },
+          "name":   { "type": "string" },
+          "role":   { "type": "string" },
           "traits": { "$ref": "#/definitions/wordArray" },
-          "arc": { "type": "string", "minLength": 1 }
-        }
+          "arc":    { "type": "string" }
+        },
+        "additionalProperties": false
       }
     },
 
     "chapters": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "type": "object",
         "required": ["number", "summary", "beats"],
-        "additionalProperties": false,
         "properties": {
-          "number": { "type": "integer", "minimum": 1 },
-          "summary": { "type": "string", "minLength": 10 },
-          "beats": {
-            "type": "array",
-            "items": { "type": "string", "minLength": 1 },
-            "minItems": 1
-          },
-          "themes": {
-            "type": "array",
-            "items": { "type": "string", "minLength": 1 }
-          },
-          "wordBudget": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Target word count for this chapter."
-          }
-        }
+          "number":     { "type": "integer" },
+          "summary":    { "type": "string" },
+          "beats":      { "type": "array", "items": { "type": "string" } },
+          "themes":     { "type": "array", "items": { "type": "string" } },
+          "wordBudget": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
       }
     }
   }
