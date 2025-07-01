@@ -1,18 +1,22 @@
 {
   "header": {
     "schemaVersion": 1,
-    "dateCreated": "2025-06-30T00:00:00Z",
-    "generator": "Novelist CLI",
-    "generatorVersion": "0.1.0"
+    "dateCreated":   "2025-07-01T00:00:00Z",
+    "generator":     "Novelist CLI",
+    "generatorVersion": "0.2.0"
   },
   "workingTitle": "",
   "authorName": "",
   "storyPremise": "",
   "storyGenre": "",
   "totalWordCount": 60000,
-  "chapterCount": 20,
+  "chapterCount":   20,
   "includePrologue": false,
   "includeEpilogue": false,
   "famousAuthorPreset": null,
-  "gptModel": "gpt-4o-mini"
+  "gptModel": "gpt-4o-mini",
+  "targetAudience": [ "Adults (Ages 19–64)" ],
+  "additionalProtagonists": 0,
+  "supportingCharacters":   2,
+  "minorCharacters":        0
 }

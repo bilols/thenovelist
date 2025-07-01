@@ -9,118 +9,98 @@ internal static class Program
 {
     private static int Main(string[] args)
     {
-        if (args.Length < 2)
-        {
-            ShowHelp();
-            return 0;
-        }
+        if (args.Length < 2) return ShowHelp();
 
-        var entity = args[0].ToLowerInvariant();
-        var verb   = args[1].ToLowerInvariant();
-
-        return (entity, verb) switch
+        return (args[0].ToLowerInvariant(), args[1].ToLowerInvariant()) switch
         {
-            ("outline", "create")         => RunOutlineCreate(args[2..]),
-            ("outline", "expand-premise") => RunExpandPremise(args[2..]),
-            ("outline", "define-arc")     => RunDefineArc(args[2..]),
-            _                             => ShowHelp()
+            ("outline", "create")            => RunCreate(args[2..]),
+            ("outline", "expand-premise")    => RunExpand(args[2..]),
+            ("outline", "define-arc")        => RunArc(args[2..]),
+            ("outline", "define-characters") => RunCharacters(args[2..]),
+            _                                => ShowHelp()
         };
     }
 
-    // ------------------------------------------------------------------ create
-    private static int RunOutlineCreate(string[] args)
+    // ---------------------------------------------------------------- outline create
+    private static int RunCreate(string[] a)
     {
-        if (!TryGetArg(args, "--project", out var projectPath))
-            return Error("--project is required.");
+        if (!TryGet(a, "--project", out var project)) return Error("--project is required.");
+        TryGet(a, "--output", out var output);
 
-        TryGetArg(args, "--output", out var outputDir);
+        var schema = Path.Combine(Environment.CurrentDirectory, "tools");
+        var preset = Path.Combine(Environment.CurrentDirectory, "author_presets");
 
-        var schemaDir = Path.Combine(Directory.GetCurrentDirectory(), "tools");
-        var presetDir = Path.Combine(Directory.GetCurrentDirectory(), "author_presets");
+        var path = new OutlineBuilderService(schema, preset)
+                   .CreateOutlineAsync(project, output).Result;
 
-        try
-        {
-            var builder = new OutlineBuilderService(schemaDir, presetDir);
-            var path    = builder.CreateOutlineAsync(projectPath, outputDir).GetAwaiter().GetResult();
-            return Success($"Outline created: {path}");
-        }
-        catch (Exception ex) { return Error(ex.Message); }
+        return Success($"Outline created: {path}");
     }
 
-    // ------------------------------------------------------------ expand-premise
-    private static int RunExpandPremise(string[] args)
+    // ----------------------------------------------------------- expand premise
+    private static int RunExpand(string[] a)
     {
-        if (!TryGetArg(args, "--outline", out var outlinePath))
-            return Error("--outline is required.");
+        if (!TryGet(a, "--outline", out var outline))  return Error("--outline is required.");
+        var model = Get(a, "--model", "gpt-4o-mini");
 
-        var model = GetArgOrDefault(args, "--model", "gpt-4o-mini");
+        new PremiseExpanderService(new NoOpLlm())
+            .ExpandPremiseAsync(outline, model).Wait();
 
-        var expander = new PremiseExpanderService(new NoOpLlmClient());
-        try
-        {
-            expander.ExpandPremiseAsync(outlinePath, model).GetAwaiter().GetResult();
-            return Success("Premise expanded.");
-        }
-        catch (Exception ex) { return Error(ex.Message); }
+        return Success("Premise expanded.");
     }
 
-    // ---------------------------------------------------------------- define-arc
-    private static int RunDefineArc(string[] args)
+    // --------------------------------------------------------------- define arc
+    private static int RunArc(string[] a)
     {
-        if (!TryGetArg(args, "--outline", out var outlinePath))
-            return Error("--outline is required.");
+        if (!TryGet(a, "--outline", out var outline))  return Error("--outline is required.");
+        var model = Get(a, "--model", "gpt-4o-mini");
 
-        var model = GetArgOrDefault(args, "--model", "gpt-4o-mini");
+        new ArcDefinerService(new NoOpLlm())
+            .DefineArcAsync(outline, model).Wait();
 
-        var definer = new ArcDefinerService(new NoOpLlmClient());
-        try
-        {
-            definer.DefineArcAsync(outlinePath, model).GetAwaiter().GetResult();
-            return Success("Story arc defined.");
-        }
-        catch (Exception ex) { return Error(ex.Message); }
+        return Success("Story arc defined.");
     }
 
-    // ---------------------------------------------------------------- helpers
-    private static bool TryGetArg(string[] args, string flag, out string value)
+    // ------------------------------------------------------ define characters
+    private static int RunCharacters(string[] a)
     {
-        value = "";
-        for (var i = 0; i < args.Length; i++)
-            if (args[i] == flag && i + 1 < args.Length)
-            { value = args[i + 1]; return true; }
+        if (!TryGet(a, "--outline", out var outline))  return Error("--outline is required.");
+        var model = Get(a, "--model", "gpt-4o-mini");
+
+        new CharactersOutlinerService(new NoOpLlm())
+            .DefineCharactersAsync(outline, model).Wait();
+
+        return Success("Characters outlined.");
+    }
+
+    // ------------------------------------------------ helpers
+    private static bool TryGet(string[] a, string flag, out string val)
+    {
+        val = string.Empty;
+        for (var i = 0; i < a.Length; i++)
+            if (a[i] == flag && i + 1 < a.Length) { val = a[i + 1]; return true; }
         return false;
     }
+    private static string Get(string[] a, string flag, string d)
+        => TryGet(a, flag, out var v) ? v : d;
 
-    private static string GetArgOrDefault(string[] args, string flag, string def)
-        => TryGetArg(args, flag, out var v) ? v : def;
-
-    private static int Success(string msg)
-    {
-        AnsiConsole.MarkupLine($"[green]{msg}[/]");
-        return 0;
-    }
-
-    private static int Error(string msg)
-    {
-        AnsiConsole.MarkupLine($"[red]Error:[/] {msg}");
-        return 1;
-    }
-
+    private static int Success(string m) { AnsiConsole.MarkupLine($"[green]{m}[/]"); return 0; }
+    private static int Error  (string m) { AnsiConsole.MarkupLine($"[red]{m}[/]");  return 1; }
     private static int ShowHelp()
     {
         AnsiConsole.MarkupLine("[bold]Novelist CLI[/]");
-        AnsiConsole.MarkupLine(" outline create         --project <file> [--output <dir>]");
-        AnsiConsole.MarkupLine(" outline expand-premise --outline <file> [--model <id>]");
-        AnsiConsole.MarkupLine(" outline define-arc     --outline <file> [--model <id>]");
+        AnsiConsole.MarkupLine(" outline create            --project <file> [--output <dir>]");
+        AnsiConsole.MarkupLine(" outline expand-premise     --outline <file> [--model <id>]");
+        AnsiConsole.MarkupLine(" outline define-arc         --outline <file> [--model <id>]");
+        AnsiConsole.MarkupLine(" outline define-characters  --outline <file> [--model <id>]");
         return 0;
     }
 
-    // ---------------------------------------------------------------- stub LLM
-    private sealed class NoOpLlmClient : ILlmClient
+    // dummy LLM
+    private sealed class NoOpLlm : ILlmClient
     {
-        public System.Threading.Tasks.Task<string> CompleteAsync(
-            string prompt, string modelId, System.Threading.CancellationToken ct = default) =>
+        public System.Threading.Tasks.Task<string> CompleteAsync(string p, string m,
+            System.Threading.CancellationToken _ = default) =>
             System.Threading.Tasks.Task.FromResult(
-                "Act 1: Setup paragraph.\n\nAct 2: Confrontation paragraph.\n\nAct 3: Resolution paragraph.");
+                "[{\"name\":\"Jack Carpenter\",\"role\":\"Protagonist\",\"traits\":[\"haunted\",\"skilled\"],\"arc\":\"Faces the ghosts of his past to find redemption.\"}]");
     }
 }

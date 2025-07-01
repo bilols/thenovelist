@@ -1,18 +1,22 @@
 {
   "header": {
     "schemaVersion": 1,
-    "dateCreated": "2025-06-30T00:00:00Z",
-    "generator": "Novelist CLI",
-    "generatorVersion": "0.1.0"
+    "dateCreated":   "2025-07-01T00:00:00Z",
+    "generator":     "Novelist CLI",
+    "generatorVersion": "0.2.0"
   },
   "workingTitle": "The Door",
-  "authorName": "Ward McCrea",
+  "authorName":   "Ward McCrea",
   "storyPremise": "A quiet, unremarkable apartment building for seniors hires a carpenter to renovate a vacant unit. The job seems simple, but the residents are anything but ordinary—especially one who claims he's \"been here forever.\" After weeks on the job, the carpenter discovers an old, warped wooden door in a hallway under renovation. He’s certain it wasn’t there before. When others brush it off, he investigates on his own. Inside, he finds something impossible: the door leads to moments from his past. At first, he’s enchanted by the chance to revisit old memories. But when darker chapters emerge, he’s forced to confront painful truths he’d buried. Then the door vanishes. Locked out, he’s left changed—and unknowingly replaced. A new carpenter arrives to take on the same job. In the building now lives a mysterious new resident: an old man with his name. The cycle quietly resets.",
-  "storyGenre": "Horror",
+  "storyGenre":   "Horror",
   "totalWordCount": 60000,
-  "chapterCount": 20,
+  "chapterCount":   20,
   "includePrologue": true,
   "includeEpilogue": true,
   "famousAuthorPreset": "StephenKing.json",
-  "gptModel": "gpt-4o-mini"
+  "gptModel": "gpt-4o-mini",
+  "targetAudience": [ "Adults (Ages 19–64)" ],
+  "additionalProtagonists": 0,
+  "supportingCharacters":   2,
+  "minorCharacters":        2
 }
