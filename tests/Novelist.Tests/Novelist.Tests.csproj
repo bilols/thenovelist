@@ -4,12 +4,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- Reference the DLL under test -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
   </ItemGroup>
 
-  <!-- NuGet dependencies -->
   <ItemGroup>
     <PackageReference Include="xunit"                     Version="2.8.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
@@ -18,13 +16,10 @@
     <PackageReference Include="JsonSchema.Net"            Version="5.1.0" />
   </ItemGroup>
 
-  <!-- Test resources copied to output directory -->
   <ItemGroup>
-    <!-- sample project JSON now lives in tests/samples/ -->
-    <None Include="..\samples\thedoor.project.json" CopyToOutputDirectory="PreserveNewest" />
-
-    <!-- schema remains at repo root /tools -->
-    <None Include="..\..\tools\project.schema.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\samples\thedoor.project.json"      CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\project.schema.v1.json"    CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\outline.schema.v1.json"    CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -9,53 +9,36 @@ internal static class Program
 {
     private static int Main(string[] args)
     {
-        if (args.Length >= 3 && args[0].Equals("outline", StringComparison.OrdinalIgnoreCase))
+        if (args.Length < 2)
         {
-            var subCommand = args[1].ToLowerInvariant();
-
-            switch (subCommand)
-            {
-                case "create":
-                    return ExecuteOutlineCreate(args[2..]);
-                default:
-                    ShowHelp();
-                    return 1;
-            }
+            ShowHelp();
+            return 0;
         }
 
-        ShowHelp();
-        return 0;
+        var entity = args[0].ToLowerInvariant();
+        var verb   = args[1].ToLowerInvariant();
+
+        return (entity, verb) switch
+        {
+            ("outline", "create")         => RunOutlineCreate(args[2..]),
+            ("outline", "expand-premise") => RunExpandPremise(args[2..]),
+            _                             => ShowHelp()
+        };
     }
 
     // ---------------------------------------------------------------------
-    // outline create --project MyBook.project.json [--output ./mydir]
+    // outline create --project <file> [--output <dir>]
     // ---------------------------------------------------------------------
-    private static int ExecuteOutlineCreate(string[] args)
+    private static int RunOutlineCreate(string[] args)
     {
         string? projectPath = null;
         string? outputDir   = null;
 
-        for (var i = 0; i < args.Length; i++)
-        {
-            switch (args[i])
-            {
-                case "--project" when i + 1 < args.Length:
-                    projectPath = args[++i];
-                    break;
-
-                case "--output" when i + 1 < args.Length:
-                    outputDir = args[++i];
-                    break;
-
-                default:
-                    AnsiConsole.MarkupLine($"[yellow]Ignoring unrecognised token:[/] {args[i]}");
-                    break;
-            }
-        }
+        ParseArgs(args, ref projectPath, ref outputDir);
 
         if (string.IsNullOrWhiteSpace(projectPath))
         {
-            AnsiConsole.MarkupLine("[red]Error:[/] --project <file> is required.");
+            AnsiConsole.MarkupLine("[red]--project is required.[/]");
             return 1;
         }
 
@@ -65,9 +48,53 @@ internal static class Program
             var presetDir = Path.Combine(Directory.GetCurrentDirectory(), "author_presets");
 
             var builder = new OutlineBuilderService(schemaDir, presetDir);
-            var outlinePath = builder.CreateOutlineAsync(projectPath, outputDir).GetAwaiter().GetResult();
+            var path    = builder.CreateOutlineAsync(projectPath, outputDir).GetAwaiter().GetResult();
 
-            AnsiConsole.MarkupLine($"[green]Outline successfully created:[/] {outlinePath}");
+            AnsiConsole.MarkupLine($"[green]Outline created:[/] {path}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+            return 1;
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // outline expand-premise --outline <file> [--model gpt-4o-mini]
+    // ---------------------------------------------------------------------
+    private static int RunExpandPremise(string[] args)
+    {
+        string? outlinePath = null;
+        string  modelId     = "gpt-4o-mini";
+
+        for (var i = 0; i < args.Length; i++)
+        {
+            switch (args[i])
+            {
+                case "--outline" when i + 1 < args.Length:
+                    outlinePath = args[++i];
+                    break;
+                case "--model" when i + 1 < args.Length:
+                    modelId = args[++i];
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(outlinePath))
+        {
+            AnsiConsole.MarkupLine("[red]--outline is required.[/]");
+            return 1;
+        }
+
+        try
+        {
+            var llm      = new NoOpLlmClient(); // placeholder until real client wired
+            var expander = new PremiseExpanderService(llm);
+
+            expander.ExpandPremiseAsync(outlinePath, modelId).GetAwaiter().GetResult();
+
+            AnsiConsole.MarkupLine("[green]Premise expanded.[/]");
             return 0;
         }
         catch (Exception ex)
@@ -78,14 +105,36 @@ internal static class Program
     }
 
     // ---------------------------------------------------------------------
-    // Basic CLI help
-    // ---------------------------------------------------------------------
-    private static void ShowHelp()
+    private static int ShowHelp()
     {
         AnsiConsole.MarkupLine("[bold]Novelist CLI[/]");
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[underline]Commands[/]");
-        AnsiConsole.MarkupLine("  outline create --project <file> [--output <dir>]");
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine(" outline create         --project <file> [--output <dir>]");
+        AnsiConsole.MarkupLine(" outline expand-premise --outline <file> [--model <id>]");
+        return 0;
+    }
+
+    private static void ParseArgs(string[] args, ref string? projectPath, ref string? outputDir)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            switch (args[i])
+            {
+                case "--project" when i + 1 < args.Length:
+                    projectPath = args[++i];
+                    break;
+                case "--output" when i + 1 < args.Length:
+                    outputDir = args[++i];
+                    break;
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Temporary stub used until a real OpenAI adapter is injected.
+    // ---------------------------------------------------------------------
+    private sealed class NoOpLlmClient : ILlmClient
+    {
+        public Task<string> CompleteAsync(string prompt, string modelId, System.Threading.CancellationToken ct = default) =>
+            Task.FromResult("Expanded premise placeholder text generated by NoOpLlmClient.");
     }
 }
