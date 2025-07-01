@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyTitle>Novelist CLI</AssemblyTitle>
+    <Description>Command‑line interface for Novelist Outline Builder.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reference the core DLL -->
+    <ProjectReference Include="..\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CLI & console UI -->
+    <PackageReference Include="Spectre.Console" Version="1.4.0" />
+
+    <!-- Serilog logging stack -->
+    <PackageReference Include="Serilog" Version="2.12.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.2.0" />
+    <!-- Simple host builder for DI + graceful shutdown -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

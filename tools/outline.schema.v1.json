@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novelist.ai/schemas/outline.schema.v1.json",
+  "title": "Novelist Story Outline (v1)",
+  "description": "Self‑contained data used to generate full chapters in multiple passes.",
+  "type": "object",
+  "required": ["header", "outlineProgress", "premise", "chapters"],
+  "additionalProperties": false,
+
+  "definitions": {
+    "wordArray": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": ["schemaVersion", "dateCreated"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "type": "integer", "minimum": 1 },
+        "dateCreated": { "$ref": "#/definitions/timestamp" },
+        "projectFile": {
+          "type": "string",
+          "description": "Relative path to the originating project.json (for traceability)."
+        }
+      }
+    },
+
+    "outlineProgress": {
+      "type": "string",
+      "enum": [
+        "Init",
+        "PremiseExpanded",
+        "ArcDefined",
+        "CharactersOutlined",
+        "ChaptersSketched",
+        "BeatsDetailed",
+        "Finalized"
+      ]
+    },
+
+    "premise": { "type": "string", "minLength": 150 },
+
+    "famousAuthor": {
+      "description": "Complete payload from the referenced author preset, copied verbatim.",
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+
+    "characters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "traits", "arc"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "role": { "type": "string", "minLength": 1 },
+          "traits": { "$ref": "#/definitions/wordArray" },
+          "arc": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["number", "summary", "beats"],
+        "additionalProperties": false,
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "summary": { "type": "string", "minLength": 10 },
+          "beats": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1
+          },
+          "themes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "wordBudget": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Target word count for this chapter."
+          }
+        }
+      }
+    }
+  }
+}

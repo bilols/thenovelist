@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- Global settings for every project in the repo -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- C# 13 preview until the compiler is final -->
+    <LangVersion>preview</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

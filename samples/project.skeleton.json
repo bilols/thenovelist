@@ -1,0 +1,18 @@
+{
+  "header": {
+    "schemaVersion": 1,
+    "dateCreated": "2025-06-30T00:00:00Z",
+    "generator": "Novelist CLI",
+    "generatorVersion": "0.1.0"
+  },
+  "workingTitle": "",
+  "authorName": "",
+  "storyPremise": "",
+  "storyGenre": "",
+  "totalWordCount": 60000,
+  "chapterCount": 20,
+  "includePrologue": false,
+  "includeEpilogue": false,
+  "famousAuthorPreset": null,
+  "gptModel": "gpt-4o-mini"
+}

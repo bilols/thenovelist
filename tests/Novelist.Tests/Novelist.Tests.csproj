@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Test framework -->
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.2.0" />
+    <!-- Assertions helper (optional, remove if not wanted) -->
+    <PackageReference Include="FluentAssertions" Version="7.0.0" />
+    <!-- Schema validation inside tests -->
+    <PackageReference Include="JsonSchema.Net" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
+  </ItemGroup>
+
+</Project>

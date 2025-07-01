@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novelist.ai/schemas/project.schema.v1.json",
+  "title": "Novelist Project File (v1)",
+  "description": "Defines the user‑supplied data that seeds the Outline Builder.",
+  "type": "object",
+  "required": [
+    "header",
+    "workingTitle",
+    "authorName",
+    "storyPremise",
+    "storyGenre",
+    "totalWordCount",
+    "chapterCount",
+    "gptModel"
+  ],
+  "additionalProperties": false,
+
+  "properties": {
+    "header": {
+      "type": "object",
+      "description": "Metadata managed by the toolchain.",
+      "required": ["schemaVersion", "dateCreated"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minor‑version bump for compatible tweaks."
+        },
+        "dateCreated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO‑8601 timestamp in UTC."
+        },
+        "generator": {
+          "type": "string",
+          "description": "Human‑readable name of the tool that produced this file."
+        },
+        "generatorVersion": {
+          "type": "string",
+          "description": "Semantic version of the tool."
+        },
+        "modelUsed": {
+          "type": "string",
+          "description": "LLM model actually used when generating (if different from gptModel)."
+        }
+      }
+    },
+
+    "workingTitle": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The book’s current title."
+    },
+    "authorName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "storyPremise": {
+      "type": "string",
+      "minLength": 150,
+      "maxLength": 4000,
+      "description": "150‑500 word premise. Length is not strictly enforced here but validated at runtime."
+    },
+    "storyGenre": {
+      "type": "string",
+      "minLength": 1
+    },
+
+    "totalWordCount": {
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 250000
+    },
+    "chapterCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "wordsPerChapter": {
+      "type": "integer",
+      "readOnly": true,
+      "description": "Auto‑calculated by the Outline Builder: totalWordCount / chapterCount."
+    },
+
+    "includePrologue": {
+      "type": "boolean",
+      "default": false
+    },
+    "prologueWordCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Defaults to half of wordsPerChapter when includePrologue=true."
+    },
+    "includeEpilogue": {
+      "type": "boolean",
+      "default": false
+    },
+    "epilogueWordCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Defaults to half of wordsPerChapter when includeEpilogue=true."
+    },
+
+    "famousAuthorPreset": {
+      "type": ["string", "null"],
+      "description": "Filename of author preset in /author_presets (e.g. \"StephenKing.json\").",
+      "pattern": "^[A-Za-z0-9_\\-]+\\.json$"
+    },
+
+    "gptModel": {
+      "type": "string",
+      "enum": [
+        "gpt-3.5-turbo",
+        "gpt-3.5-turbo-16k",
+        "gpt-4",
+        "gpt-4o-mini",
+        "gpt-4o",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "gpt-4-turbo",
+        "gpt-4.5-preview"
+      ],
+      "default": "gpt-4o-mini"
+    }
+  }
+}
