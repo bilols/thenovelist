@@ -9,7 +9,10 @@ obj/
 *.dbmdl
 *.cache
 *.log
-__pycache__/
+*.tmp
+*.bak
+*.old
+*.orig
 
 #----------------------------------------------------------------------------
 # Rider / VS Code / VS for Mac
@@ -34,19 +37,25 @@ publish/
 dist/
 
 #----------------------------------------------------------------------------
-# Configuration transforms
+# Configuration / secrets & environment files
 #----------------------------------------------------------------------------
-*.*.user
 *.secret.json
 secrets.json
+.localtool-manifest.json
+.env
+.env.*
+openai_settings.json
 
 #----------------------------------------------------------------------------
-# Test results
+# Test results & coverage
 #----------------------------------------------------------------------------
 TestResults/
+coverage/
 *.coverage
 *.coveragexml
 *.trx
+.coverlet/
+.nyc_output/
 
 #----------------------------------------------------------------------------
 # ReSharper / Analyzer caches
@@ -56,37 +65,20 @@ _ReSharper*/
 **/SolutionCaches/
 
 #----------------------------------------------------------------------------
-# Temporary files
-#----------------------------------------------------------------------------
-*.tmp
-*.bak
-*.old
-*.orig
-
-#----------------------------------------------------------------------------
-# Local tools & CLI
-#----------------------------------------------------------------------------
-.localtool-manifest.json
-
-#----------------------------------------------------------------------------
 # Front‑end / Blazor & web assets
 #----------------------------------------------------------------------------
 node_modules/
-npm‑debug.log*
-yarn‑debug.log*
-yarn‑error.log*
-*.svelte-kit/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.svelte-kit/
 .storybook/
-webpack‑stats.json
-
-#----------------------------------------------------------------------------
-# IDE‑specific to Blazor WASM
-#----------------------------------------------------------------------------
+webpack-stats.json
 wwwroot/css/*.map
 wwwroot/js/*.map
 
 #----------------------------------------------------------------------------
-# Misc
+# Misc OS artefacts
 #----------------------------------------------------------------------------
 # macOS
 .DS_Store
