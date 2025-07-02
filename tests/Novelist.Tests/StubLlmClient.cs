@@ -3,29 +3,39 @@ using System.Threading;
 using System.Threading.Tasks;
 using Novelist.OutlineBuilder;
 
-namespace Novelist.Tests;
-
-public sealed class StubLlmClient : ILlmClient
+namespace Novelist.Tests
 {
-    public Task<string> CompleteAsync(string prompt, string model, CancellationToken ct = default)
+    public sealed class StubLlmClient : ILlmClient
     {
-        if (prompt.Contains("JSON array", StringComparison.OrdinalIgnoreCase))
+        public Task<string> CompleteAsync(
+            string prompt, string model, CancellationToken ct = default)
         {
-            return Task.FromResult(
-                "[{\"name\":\"Jack Carpenter\",\"role\":\"Protagonist\",\"traits\":[\"haunted\",\"skilled\"],\"arc\":\"Confronts past tragedy to find redemption.\"}," +
-                " {\"name\":\"Art Monroe\",\"role\":\"Supporting\",\"traits\":[\"eccentric\"],\"arc\":\"Learns to protect what matters.\"}]");
-        }
+            // Structure request
+            if (prompt.Contains("\"beats\"", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(
+                    "[" +
+                    "{\"number\":1,\"summary\":\"Opens with tension.\"," +
+                    "\"beats\":[\"Jack arrives\",\"Odd door\",\"Warning\"]," +
+                    "\"themes\":[\"isolation\"]}," +
+                    "{\"number\":2,\"summary\":\"Escalation.\"," +
+                    "\"beats\":[\"Nightmare\",\"Keys missing\",\"Light flicker\"]}" +
+                    "]");
+            }
 
-        if (prompt.Contains("multi-act", StringComparison.OrdinalIgnoreCase) ||
-            prompt.Contains("create a clear", StringComparison.OrdinalIgnoreCase))
-        {
-            return Task.FromResult(
-                "Act 1: Setup paragraph with ample length for schema.\n\n" +
-                "Act 2: Conflict escalates over several sentences.\n\n" +
-                "Act 3: Resolution and fallout adequately described.");
-        }
+            // Characters request
+            if (prompt.Contains("JSON array", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(
+                    "[{\"name\":\"Jack Carpenter\",\"role\":\"Protagonist\"," +
+                    "\"traits\":[\"haunted\"],\"arc\":\"Faces past.\"}]");
+            }
 
-        return Task.FromResult(
-            "Expanded premise from StubLlmClient. This paragraph intentionally exceeds 150 characters to satisfy validation requirements, describing tone, stakes, protagonist motivation, and thematic undercurrents for the test.");
+            // Premise / arc fallback: include literal "StubLlmClient" for tests
+            return Task.FromResult(
+                "StubLlmClient expanded premise text exceeding 150 characters " +
+                "to satisfy validation length. Lorem ipsum dolor sit amet, " +
+                "consectetur adipiscing elit, sed do eiusmod tempor incididunt.");
+        }
     }
 }

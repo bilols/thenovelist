@@ -1,15 +1,16 @@
-namespace Novelist.OutlineBuilder;
-
-/// <summary>
-/// High‑level phases an outline moves through.
-/// </summary>
-public enum OutlineProgress
+namespace Novelist.OutlineBuilder
 {
-    Init,
-    PremiseExpanded,
-    ArcDefined,
-    CharactersOutlined,
-    ChaptersSketched,
-    BeatsDetailed,
-    Finalized
+    /// <summary>
+    /// Ordered list of pipeline phases in the outline‑builder pipeline.
+    /// </summary>
+    public enum OutlineProgress
+    {
+        Init,
+        PremiseExpanded,
+        ArcDefined,
+        CharactersOutlined,
+        StructureOutlined, 
+        BeatsDetailed,
+        Finalized
+    }
 }
