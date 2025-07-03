@@ -1,0 +1,275 @@
+{
+  "header": {
+    "schemaVersion": 5,
+    "dateCreated": "2025-07-03T04:11:29.3881789Z",
+    "projectFile": "..\\tests\\samples\\thedoor.project.json"
+  },
+  "outlineProgress": "StructureOutlined",
+  "premise": "The Oakwood Apartments, a nondescript building tucked away on a quiet street, seemed an unlikely stage for anything extraordinary. Yet, as the summer sun painted the faded bricks in shades of gold, a palpable tension simmered beneath the surface. The residents, a collection of eccentric souls with stories etched in the lines of their faces, watched with a mix of curiosity and veiled caution as the new carpenter, Jason, began his work on a vacant unit. Initially, the job appeared straightforward—fresh paint, new fixtures, a simple upgrade to a tired space. But as Jason tore through the walls, unearthing decades of forgotten history, he stumbled upon an ancient door, warped and inconspicuous, hidden in a dimly lit hallway. Despite the residents’ dismissive remarks, he felt an inexplicable pull towards it, an urge to delve deeper into the shadows of his own past. \n\nWhen he finally turned the handle, he was transported back to sun-drenched afternoons and laughter that echoed through time, reliving cherished moments that slipped away too swiftly. But the enchantment soon turned sour, as darker memories clawed their way to the surface—painful truths he had long suppressed. Just as he was on the brink of understanding, the door vanished, leaving him with a haunting sense of loss and a heart heavy with regret. As he emerged into the stark reality of the present, he found himself irrevocably changed—stripped of his past yet burdened by its weight. Unbeknownst to him, a new carpenter was arriving, a stranger with an uncanny resemblance to Jason, while in the shadows of Oakwood, a mysterious old man bore his name, hinting at a cycle of memory and identity that was far from over. The air grew thick with unspoken secrets, the walls whispering tales of lives intertwined, as the building continued to breathe, alive with its own enigmatic rhythm.",
+  "totalWordCount": 60000,
+  "chapterCount": 20,
+  "storyArc": "In the Oakwood Apartments, a seemingly mundane building, the arrival of Jason, a new carpenter, stirs the curiosity of its eclectic residents. As he begins renovations on a vacant unit, he discovers an ancient, hidden door that beckons him with an inexplicable allure. Despite the residents' skepticism, Jason feels compelled to explore what lies beyond, igniting a journey that intertwines his fate with the building's forgotten history.\n\nUpon opening the door, Jason is transported into a vivid tapestry of his past, reliving moments filled with joy and nostalgia. However, the experience takes a dark turn as suppressed memories resurface, revealing painful truths that threaten to unravel his sense of self. As he grapples with these haunting revelations, he starts to understand the complexity of his identity and the weight of his past.\n\nJust as Jason reaches a pivotal moment of clarity, the door inexplicably vanishes, forcing him back to reality. Stripped of the comforting embrace of his memories yet burdened by their haunting presence, he emerges a changed man. The palpable tension within the Oakwood Apartments deepens as the residents notice his transformation, and the air thickens with unspoken secrets.\n\nMeanwhile, a new carpenter arrives, strikingly similar to Jason, hinting at a mysterious connection between them. As the residents speculate about the uncanny resemblance, the enigmatic old man lurking in the shadows reveals a shared name with Jason, suggesting a cyclical nature of memory and identity that transcends time. The building breathes with life, whispering tales of intertwined fates as the residents grapple with the ghosts of their own pasts.\n\nIn the final act, the residents of Oakwood come together, drawn by their own stories and the threads that bind them to Jason and the new carpenter. As they confront their shared histories, they begin to uncover the truth about the building's legacy and the importance of remembering and reconciling with the past. With the echo of laughter and the weight of regret, they forge a new understanding of their identities, embracing the complexities of their lives as they navigate the ever-evolving rhythm of Oakwood Apartments.",
+  "characters": [
+    {
+      "name": "Jason R. Timmons",
+      "role": "Protagonist: Carpenter",
+      "traits": [
+        "determined",
+        "reflective",
+        "curious",
+        "haunted",
+        "empathetic"
+      ],
+      "arc": "Jason starts as a skilled carpenter focused solely on his job, but his discovery of the ancient door forces him to confront buried memories of joy and pain. He transitions from a man running from his past to one who understands its impact on his identity, ultimately emerging more self-aware and willing to embrace the complexities of his life."
+    },
+    {
+      "name": "Clara M. Jennings",
+      "role": "Supporting character: Resident",
+      "traits": [
+        "observant",
+        "cynical",
+        "protective",
+        "wise",
+        "mischievous"
+      ],
+      "arc": "Clara initially dismisses Jason's curiosity about the door, viewing him as just another transient. However, as she observes his transformation, she begins to reflect on her own past regrets and learns to embrace vulnerability, ultimately forming a supportive bond with him."
+    },
+    {
+      "name": "Eli M. Dawson",
+      "role": "Supporting character: Mysterious old man",
+      "traits": [
+        "enigmatic",
+        "cryptic",
+        "ancient",
+        "wise",
+        "melancholic"
+      ],
+      "arc": "Eli appears as a mere specter in the building, yet he holds the key to its secrets. Through his interactions with Jason, he reveals layers of his own tragic history, ultimately guiding Jason towards acceptance of his own past, while confronting his own unresolved regrets."
+    },
+    {
+      "name": "Sophie L. Martin",
+      "role": "Minor character: Resident",
+      "traits": [
+        "optimistic",
+        "chatty",
+        "naive",
+        "supportive",
+        "curious"
+      ],
+      "arc": "Sophie represents the bright light of the apartment complex, often bringing a sense of community. While she initially overlooks the deeper issues, her innocence and enthusiasm help to bridge connections among the residents, encouraging them to confront their own stories."
+    },
+    {
+      "name": "Graham W. Fisher",
+      "role": "Minor character: Maintenance worker",
+      "traits": [
+        "gruff",
+        "pragmatic",
+        "sardonic",
+        "hardworking",
+        "reliable"
+      ],
+      "arc": "Graham is the practical backbone of Oakwood, often dismissive of the supernatural elements. However, as Jason’s journey unfolds, he reluctantly begins to acknowledge the building’s mysteries, ultimately revealing a hidden layer of his own past that connects him to the history of Oakwood."
+    }
+  ],
+  "chapters": [
+    {
+      "number": 0,
+      "summary": "In the Oakwood Apartments, an ordinary building, a new carpenter's arrival stirs an undercurrent of curiosity among its eclectic residents.",
+      "beats": "The Oakwood Apartments are introduced, showcasing its diverse residents. Jason arrives, sparking interest and skepticism. The building's history is hinted at through the residents' conversations. Jason begins his renovation work, setting the stage for the unfolding mystery.",
+      "themes": [
+        "curiosity",
+        "community",
+        "history"
+      ]
+    },
+    {
+      "number": 1,
+      "summary": "Jason begins renovations, catching the eye of the residents and igniting discussions about the building's past.",
+      "beats": "Jason starts painting and fixing the vacant unit. Clara observes him with skepticism. Sophie enthusiastically engages him, asking about his plans. The residents share ghost stories about the building, hinting at its mysterious history.",
+      "themes": [
+        "curiosity",
+        "mystery"
+      ]
+    },
+    {
+      "number": 2,
+      "summary": "While renovating, Jason discovers an ancient door hidden within the walls, igniting his intrigue and the residents' caution.",
+      "beats": "Jason uncovers the door while tearing down drywall. He feels a strange pull towards it. The residents express their disbelief and concern. Clara warns him against getting too involved with the building's secrets.",
+      "themes": [
+        "discovery",
+        "caution"
+      ]
+    },
+    {
+      "number": 3,
+      "summary": "Driven by curiosity, Jason decides to open the ancient door, crossing a threshold into his past.",
+      "beats": "Jason hesitantly opens the door. He is enveloped in light, experiencing a rush of memories. Laughter and warmth flood his senses, transporting him back to joyful times. He begins to relive cherished moments from his childhood.",
+      "themes": [
+        "nostalgia",
+        "identity"
+      ]
+    },
+    {
+      "number": 4,
+      "summary": "As Jason relives joyful memories, darker truths begin to emerge, challenging his sense of self.",
+      "beats": "Jason experiences a blend of joy and pain as forgotten memories resurface. The laughter fades into shadows of sorrow. He confronts the loss of loved ones and moments he had buried deep within himself.",
+      "themes": [
+        "memory",
+        "pain"
+      ]
+    },
+    {
+      "number": 5,
+      "summary": "In the midst of joy, Jason faces haunting truths that force him to confront his past and its impact on his identity.",
+      "beats": "Jason grapples with conflicting emotions. The door flickers in and out, reflecting his struggle. He recalls a pivotal moment of loss that shaped his life, deepening his introspection.",
+      "themes": [
+        "self-discovery",
+        "regret"
+      ]
+    },
+    {
+      "number": 6,
+      "summary": "Just as clarity begins to dawn, the door inexplicably vanishes, casting Jason back into the stark reality of the present.",
+      "beats": "Jason reaches an emotional epiphany when the door suddenly disappears. He is jolted back into the empty apartment, disoriented and confused. The weight of his memories lingers heavily on his heart.",
+      "themes": [
+        "loss",
+        "transformation"
+      ]
+    },
+    {
+      "number": 7,
+      "summary": "Emerging from the experience, Jason feels transformed, yet burdened by the unresolved memories of his past.",
+      "beats": "Jason reflects on his experience, feeling a mix of empowerment and sorrow. The residents notice his change, prompting curiosity and concern. Clara senses a deeper story within him.",
+      "themes": [
+        "change",
+        "community"
+      ]
+    },
+    {
+      "number": 8,
+      "summary": "A new carpenter arrives at Oakwood, strikingly similar to Jason, creating intrigue and speculation among the residents.",
+      "beats": "The new carpenter, Alex, is introduced, causing a stir among the residents. Jason notices the resemblance and feels an unsettling connection. Speculations about fate and identity arise among the residents.",
+      "themes": [
+        "identity",
+        "fate"
+      ]
+    },
+    {
+      "number": 9,
+      "summary": "As Jason navigates his transformation, he begins to forge connections with the residents, particularly Clara.",
+      "beats": "Jason opens up to Clara about his experience with the door. Their conversations deepen, revealing shared vulnerabilities. Clara begins to reflect on her own past and regrets.",
+      "themes": [
+        "connection",
+        "vulnerability"
+      ]
+    },
+    {
+      "number": 10,
+      "summary": "Eli, the enigmatic old man, reveals cryptic insights about the building's history, hinting at a deeper connection with Jason.",
+      "beats": "Eli interacts with Jason, sharing mysterious tales of the building. He hints that Jason's journey is part of a larger cycle. Jason feels a strange familiarity with Eli, deepening the intrigue.",
+      "themes": [
+        "mystery",
+        "legacy"
+      ]
+    },
+    {
+      "number": 11,
+      "summary": "Jason begins to uncover more about the building's past, connecting it to his own history and identity.",
+      "beats": "Jason investigates the building’s history, piecing together stories from other residents. He discovers threads linking their lives to his. The weight of shared experiences grows as the residents bond.",
+      "themes": [
+        "shared history",
+        "identity"
+      ]
+    },
+    {
+      "number": 12,
+      "summary": "Residents confront their own pasts, spurred by Jason's transformation and the echoes of the building's legacy.",
+      "beats": "Sophie encourages a gathering to discuss their stories. Each resident shares moments of vulnerability, revealing regrets and dreams. The atmosphere shifts as they find strength in their shared experiences.",
+      "themes": [
+        "community",
+        "healing"
+      ]
+    },
+    {
+      "number": 13,
+      "summary": "As the residents grow closer, Jason grapples with the implications of the new carpenter's arrival and his own identity.",
+      "beats": "Jason feels conflicted about Alex's presence and what it means for him. Clara helps him process these feelings, urging him to embrace his uniqueness. The bond among the residents strengthens.",
+      "themes": [
+        "identity",
+        "acceptance"
+      ]
+    },
+    {
+      "number": 14,
+      "summary": "The building seems to react to the residents' revelations, whispering tales of their intertwined fates.",
+      "beats": "Jason and the residents notice strange occurrences in the building. Eli hints that the building responds to their emotions. They begin to explore the deeper connection between their stories and the Oakwood legacy.",
+      "themes": [
+        "mystery",
+        "connection"
+      ]
+    },
+    {
+      "number": 15,
+      "summary": "Jason confronts Eli for answers, seeking clarity on the connection between himself, Alex, and the building's history.",
+      "beats": "Jason demands answers from Eli about his past and the new carpenter. Eli shares fragmented tales of fate and memory. Jason feels the weight of the building's legacy pressing on him.",
+      "themes": [
+        "truth",
+        "legacy"
+      ]
+    },
+    {
+      "number": 16,
+      "summary": "The residents unite to support each other as they confront their own buried memories and the building's impact on their lives.",
+      "beats": "The residents hold a gathering to share their stories, revealing hidden truths. They bond over shared experiences of loss and resilience. Jason’s journey inspires them to embrace their pasts.",
+      "themes": [
+        "community",
+        "resilience"
+      ]
+    },
+    {
+      "number": 17,
+      "summary": "Jason reaches a pivotal moment of acceptance, understanding his identity and the role of the Oakwood Apartments in his life.",
+      "beats": "Jason reflects on his journey, feeling a sense of closure. He acknowledges the pain but also the beauty of his memories. The residents rally around him, celebrating their collective healing.",
+      "themes": [
+        "acceptance",
+        "healing"
+      ]
+    },
+    {
+      "number": 18,
+      "summary": "The new carpenter, Alex, reveals his own connection to the Oakwood legacy, deepening the mystery and unity among the residents.",
+      "beats": "Alex shares his history with the building, revealing unexpected ties to Jason’s past. The residents realize they are all part of a larger narrative. Bonds strengthen as they face their stories together.",
+      "themes": [
+        "identity",
+        "connection"
+      ]
+    },
+    {
+      "number": 19,
+      "summary": "As the summer wanes, the residents commit to supporting one another, ready to face their futures with renewed understanding.",
+      "beats": "The residents come together for a final gathering, vowing to stay connected. Jason feels a sense of belonging. The Oakwood Apartments pulse with life as they celebrate their stories.",
+      "themes": [
+        "community",
+        "hope"
+      ]
+    },
+    {
+      "number": 20,
+      "summary": "The building stands as a testament to the lives intertwined within its walls, a living memory of all who have passed through.",
+      "beats": "The residents reflect on their journey, recognizing the importance of memory and connection. Jason and Alex share a moment of understanding. The Oakwood Apartments continue to breathe, alive with stories.",
+      "themes": [
+        "memory",
+        "legacy"
+      ]
+    },
+    {
+      "number": 21,
+      "summary": "In the epilogue, the building's legacy continues as new residents arrive, unknowingly stepping into a cycle of memory.",
+      "beats": "New tenants move into Oakwood, unaware of its rich history. The residents watch with a mix of nostalgia and curiosity. A final glimpse of Eli hints at the cycle of stories repeating.",
+      "themes": [
+        "continuity",
+        "legacy"
+      ]
+    }
+  ]
+}

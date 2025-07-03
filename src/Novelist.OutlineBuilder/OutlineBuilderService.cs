@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -35,6 +34,7 @@ namespace Novelist.OutlineBuilder
             // Mandatory fields for schema v1
             var totalWords   = projectJson["totalWordCount"]!.Value<int>();
             var chapterCount = projectJson["chapterCount"]!.Value<int>();
+            var premise      = projectJson["storyPremise"]?.ToString() ?? string.Empty;
 
             var outline = new JObject
             {
@@ -48,7 +48,7 @@ namespace Novelist.OutlineBuilder
                 },
 
                 ["outlineProgress"] = OutlineProgress.Init.ToString(),
-                ["premise"]         = string.Empty,
+                ["premise"]         = premise,        // <<-- now seeded
                 ["totalWordCount"]  = totalWords,
                 ["chapterCount"]    = chapterCount
             };

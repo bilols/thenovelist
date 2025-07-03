@@ -5,112 +5,161 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Novelist.OutlineBuilder;
-
-/// <summary>
-/// Generates a character roster and advances the outline to CharactersOutlined.
-/// </summary>
-public sealed class CharactersOutlinerService
+namespace Novelist.OutlineBuilder
 {
-    private readonly ILlmClient _llm;
-
-    public CharactersOutlinerService(ILlmClient llm) => _llm = llm;
-
-    public async Task DefineCharactersAsync(
-        string outlinePath,
-        string modelId,
-        CancellationToken ct = default)
+    /// <summary>
+    /// Generates the character roster and advances the outline.
+    /// </summary>
+    public sealed class CharactersOutlinerService
     {
-        var outlineJson = JObject.Parse(await File.ReadAllTextAsync(outlinePath, ct));
+        private readonly ILlmClient _llm;
+        private readonly bool       _includeAuthorPreset;
 
-        if (!Enum.TryParse(outlineJson["outlineProgress"]?.Value<string>(),
-                           out OutlineProgress phase) ||
-            phase != OutlineProgress.ArcDefined)
+        public CharactersOutlinerService(ILlmClient llm, bool includeAuthorPreset = false)
         {
-            throw new InvalidOperationException("Outline is not in the ArcDefined phase.");
+            _llm                 = llm;
+            _includeAuthorPreset = includeAuthorPreset;
         }
 
-        // Resolve originating project file (relative path stored in outline header)
-        var projectRel = outlineJson["header"]?["projectFile"]?.Value<string>() ?? string.Empty;
-        var projectAbs = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(outlinePath)!,
-            "..",
-            projectRel));
-
-        var project = File.Exists(projectAbs)
-            ? JObject.Parse(File.ReadAllText(projectAbs))
-            : null;
-
-        var totalCharacters =
-              1 /*protagonist*/ +
-              (project?["additionalProtagonists"]?.Value<int>() ?? 0) +
-              (project?["supportingCharacters"]?.Value<int>()   ?? 0) +
-              (project?["minorCharacters"]?.Value<int>()        ?? 0);
-
-        totalCharacters = Math.Min(totalCharacters, 7);
-
-        // ---------- FIX: produce non‑nullable string[] -----------------
-        var audience = (project?["targetAudience"] as JArray)?
-                           .Select(t => t.Value<string>())
-                           .Where(s => !string.IsNullOrWhiteSpace(s))
-                           .Select(s => s!)               // s is non‑null after Where
-                           .ToArray()
-                       ?? Array.Empty<string>();
-        // ----------------------------------------------------------------
-
-        var prompt = BuildPrompt(outlineJson, totalCharacters, audience);
-
-        var maxRetries = RetryPolicy.GetMaxRetries(modelId);
-        string? result = null; Exception? lastEx = null;
-
-        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        public async Task DefineCharactersAsync(string outlinePath,
+                                                string modelId,
+                                                CancellationToken ct = default)
         {
-            try
+            var outlineJson = JObject.Parse(await File.ReadAllTextAsync(outlinePath, ct));
+
+            if (!Enum.TryParse(outlineJson["outlineProgress"]?.ToString(),
+                               out OutlineProgress phase) ||
+                phase != OutlineProgress.ArcDefined)
+                throw new InvalidOperationException("Outline is not in the ArcDefined phase.");
+
+            // ----------------------------------------------------------------
+            // Resolve originating project file (fixes extra '..' bug)
+            // ----------------------------------------------------------------
+            var rel = outlineJson["header"]?["projectFile"]?.ToString()
+                      ?? throw new InvalidDataException("header.projectFile missing.");
+
+            var projectPath = Path.GetFullPath(
+                                  Path.Combine(Path.GetDirectoryName(outlinePath)!, rel));
+
+            if (!File.Exists(projectPath))
+                throw new FileNotFoundException("Cannot locate project file.", projectPath);
+
+            var project = JObject.Parse(File.ReadAllText(projectPath));
+
+            // ----------------------------------------------------------------
+            // Read counts (fail fast)
+            // ----------------------------------------------------------------
+            int supporting = project["supportingCharacters"]?.Type == JTokenType.Integer
+                             ? project["supportingCharacters"]!.Value<int>()
+                             : throw new InvalidDataException("'supportingCharacters' missing or not integer.");
+
+            int minor      = project["minorCharacters"]?.Type == JTokenType.Integer
+                             ? project["minorCharacters"]!.Value<int>()
+                             : throw new InvalidDataException("'minorCharacters' missing or not integer.");
+
+            int total = 1 + supporting + minor; // protagonist + supporting + minor
+
+            // ----------------------------------------------------------------
+            // Build strict prompt
+            // ----------------------------------------------------------------
+            var audience = (project["targetAudience"] as JArray)?
+                               .Select(t => t.ToString())
+                               .Where(s => !string.IsNullOrWhiteSpace(s))
+                               .ToArray() ?? Array.Empty<string>();
+
+            var famousPreset = _includeAuthorPreset
+                 ? project["famousAuthorPreset"]?.ToString()
+                 : null;
+
+            var prompt = BuildPrompt(outlineJson, total, supporting, minor,
+                                     audience, famousPreset);
+
+            // ----------------------------------------------------------------
+            // Call LLM with retry until correct JSON length
+            // ----------------------------------------------------------------
+            var maxRetries = RetryPolicy.GetMaxRetries(modelId);
+            JArray? roster = null; Exception? last = null;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                result = await _llm.CompleteAsync(prompt, modelId, ct);
-                if (!string.IsNullOrWhiteSpace(result)) break;
-            }
-            catch (Exception ex) when (attempt < maxRetries)
-            {
-                lastEx = ex;
+                try
+                {
+                    var reply = await _llm.CompleteAsync(prompt, modelId, ct);
+                    roster    = JArray.Parse(Sanitize(reply));
+
+                    if (roster.Count == total) break;   // success
+                }
+                catch (Exception ex) when (attempt < maxRetries)
+                {
+                    last = ex;
+                }
+
                 await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
             }
+
+            if (roster is null || roster.Count != total)
+                throw new InvalidOperationException("LLM failed to return correct character roster.", last);
+
+            outlineJson["characters"]      = roster;
+            outlineJson["outlineProgress"] = OutlineProgress.CharactersOutlined.ToString();
+            outlineJson["header"]!["schemaVersion"] =
+                outlineJson["header"]!["schemaVersion"]!.Value<int>() + 1;
+
+            await File.WriteAllTextAsync(outlinePath, outlineJson.ToString(), ct);
         }
 
-        if (string.IsNullOrWhiteSpace(result))
-            throw new InvalidOperationException("LLM failed to return character roster.", lastEx);
+        // --------------------------------------------------------------------
+        private static string Sanitize(string raw)
+        {
+            var t = raw.Trim();
+            if (t.StartsWith("```"))
+            {
+                var firstNl  = t.IndexOf('\n');
+                var lastFence= t.LastIndexOf("```", StringComparison.Ordinal);
+                if (firstNl >= 0 && lastFence > firstNl)
+                    return t.Substring(firstNl + 1, lastFence - firstNl - 1).Trim();
+            }
+            return t;
+        }
 
-        var characters = JArray.Parse(result); // strict JSON array expected
-        outlineJson["characters"]      = characters;
-        outlineJson["outlineProgress"] = OutlineProgress.CharactersOutlined.ToString();
-        outlineJson["header"]!["schemaVersion"] =
-            outlineJson["header"]!["schemaVersion"]!.Value<int>() + 1;
+        private static string BuildPrompt(JObject outline,
+                                          int total, int supporting, int minor,
+                                          string[] audience,
+                                          string? authorPreset)
+        {
+            var premise = outline["premise"]!.ToString();
+            var audienceLine = audience.Length > 0
+                ? $"Target audience: {string.Join(", ", audience)}."
+                : string.Empty;
 
-        await File.WriteAllTextAsync(outlinePath, outlineJson.ToString(), ct);
-    }
+            var styleLine = !string.IsNullOrWhiteSpace(authorPreset)
+                ? $"Emulate the tonal style of {authorPreset.Replace(".json", "")}."
+                : string.Empty;
 
-    private static string BuildPrompt(JObject outline, int totalCharacters, string[] audience)
-    {
-        var premise = outline["premise"]!.Value<string>();
-        var audienceLine = audience.Length > 0
-            ? $"Target audience: {string.Join(", ", audience)}."
-            : string.Empty;
+            return
+$@"You are an elite character‑development assistant.
 
-        return @$"
-You are an elite character‑development assistant.
+Create exactly {total} characters for the premise below:
 
-Based on the premise below, create a JSON array (no markdown) of up to {totalCharacters} characters.
+  • 1 protagonist – MUST be the first object
+  • {supporting} supporting characters
+  • {minor} minor characters
+
 Each object MUST contain:
-  - ""name""  : full name
-  - ""role""  : 1 – 7‑word description
-  - ""traits"": array of 1‑5 one‑ or two‑word descriptors
-  - ""arc""   : ≤ 100‑word description of the character's personal journey
+  ""name""  : full name
+  ""role""  : starts with one of exactly
+             ""Protagonist: "", ""Supporting character: "", ""Minor character: ""
+  ""traits"": 1–5 short descriptors
+  ""arc""   : ≤100‑word personal journey
 
-The first object MUST be the story's primary protagonist.
+Return ONLY the raw JSON array. Do NOT wrap in Markdown.  
+If you cannot comply, reply only with the word: RETRY.
 
 {audienceLine}
+{styleLine}
 
 PREMISE:
 {premise}";
+        }
     }
 }

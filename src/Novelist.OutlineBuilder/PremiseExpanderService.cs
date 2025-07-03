@@ -4,89 +4,57 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Novelist.OutlineBuilder;
-
-/// <summary>
-/// Expands the story premise by invoking an LLM and merging the result into the outline.
-/// </summary>
-public sealed class PremiseExpanderService
+namespace Novelist.OutlineBuilder
 {
-    private readonly ILlmClient _llm;
-    private readonly int        _maxRetries;
-    private readonly TimeSpan   _initialDelay;
-
-    public PremiseExpanderService(ILlmClient llm, int maxRetries = 3, TimeSpan? initialDelay = null)
-    {
-        _llm          = llm;
-        _maxRetries   = maxRetries;
-        _initialDelay = initialDelay ?? TimeSpan.FromSeconds(2);
-    }
-
     /// <summary>
-    /// Mutates the outline in place (overwrites file).
+    /// Expands a short premise to roughly 200–300 words and advances the outline.
     /// </summary>
-    public async Task ExpandPremiseAsync(string outlinePath, string modelId, CancellationToken ct = default)
+    public sealed class PremiseExpanderService
     {
-        var outlineJson = JObject.Parse(await File.ReadAllTextAsync(outlinePath, ct));
+        private readonly ILlmClient _llm;
+        private readonly bool       _includeAudience;
 
-        // Validate current phase
-        if (!Enum.TryParse(outlineJson["outlineProgress"]?.Value<string>(), out OutlineProgress current) ||
-            current != OutlineProgress.Init)
-            throw new InvalidOperationException("Outline is not in the Init phase.");
-
-        // Compose prompt
-        var prompt = BuildPrompt(outlineJson);
-
-        // Retry loop
-        Exception? lastEx = null;
-        string?    llmResult = null;
-
-        for (var attempt = 1; attempt <= _maxRetries; attempt++)
+        public PremiseExpanderService(ILlmClient llm, bool includeAudience = true)
         {
-            try
-            {
-                llmResult = await _llm.CompleteAsync(prompt, modelId, ct);
-                if (!string.IsNullOrWhiteSpace(llmResult))
-                    break;
-            }
-            catch (Exception ex) when (attempt < _maxRetries)
-            {
-                lastEx = ex;
-                await Task.Delay(_initialDelay * attempt, ct); // simple back‑off
-            }
+            _llm             = llm;
+            _includeAudience = includeAudience;
         }
 
-        if (string.IsNullOrWhiteSpace(llmResult))
-            throw new InvalidOperationException("LLM failed to return premise.", lastEx);
+        public async Task ExpandPremiseAsync(string outlinePath,
+                                             string modelId,
+                                             CancellationToken ct = default)
+        {
+            var outline = JObject.Parse(File.ReadAllText(outlinePath));
 
-        // Merge result
-        outlineJson["premise"]         = llmResult.Trim();
-        outlineJson["outlineProgress"] = OutlineProgress.PremiseExpanded.ToString();
+            if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
+                               out OutlineProgress phase) ||
+                phase != OutlineProgress.Init)
+                throw new InvalidOperationException("Outline is not in the Init phase.");
 
-        // Overwrite file
-        await File.WriteAllTextAsync(outlinePath, outlineJson.ToString(), ct);
-    }
+            var shortPremise = outline["premise"]!.ToString();
+            var genre        = outline["storyGenre"]?.ToString() ?? "General fiction";
+            var audienceArr  = outline["targetAudience"] as JArray;
+            var audienceLine = _includeAudience && audienceArr is { Count: > 0 }
+                                ? $"Target audience: {string.Join(", ", audienceArr)}."
+                                : string.Empty;
 
-    // ---------------------------------------------------------------------
-    // Prompt builder (const string template)
-    // ---------------------------------------------------------------------
-    private static string BuildPrompt(JObject outline)
-    {
-        var workingPremise = outline["premise"]!.Value<string>();
-        var authorSection  = outline["famousAuthor"]?.HasValues == true
-            ? $"Write in the general style of {outline["famousAuthor"]!["name"]}."
-            : string.Empty;
+            var prompt =
+$@"Expand the premise below into a vivid 200‑300‑word paragraph in the style of {genre}.
+Include tone, stakes, and atmosphere. {audienceLine}
 
-        return @$"
-You are an expert fiction development editor.
-Given the rough premise below, expand it to a rich 300‑500‑word high‑concept premise
-that establishes tone, stakes, protagonist, and antagonist without revealing the ending.
+Return ONLY the expanded premise text without markdown fences.
 
-{authorSection}
+PREMISE:
+{shortPremise}";
 
-ROUGH PREMISE:
-{workingPremise}
+            var expanded = await _llm.CompleteAsync(prompt, modelId, ct);
 
-Format as plain paragraphs; do not prepend headings or bullet points.";
+            outline["premise"]         = expanded.Trim();
+            outline["outlineProgress"] = OutlineProgress.PremiseExpanded.ToString();
+            outline["header"]!["schemaVersion"] =
+                outline["header"]!["schemaVersion"]!.Value<int>() + 1;
+
+            File.WriteAllText(outlinePath, outline.ToString());
+        }
     }
 }

@@ -2,20 +2,23 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyTitle>Novelist CLI</AssemblyTitle>
-    <Description>Command‑line interface for Novelist Outline Builder.</Description>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- User‑secrets GUID (regenerate with 'dotnet user-secrets init' if desired) -->
+    <UserSecretsId>d1a9e54d-e23b-4d9f-9027-313b2e0e9e71</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.50.0" />
-    <PackageReference Include="Serilog" Version="2.12.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Spectre.Console.Cli" Version="0.50.0" />
+    <ProjectReference Include="..\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
   </ItemGroup>
 
 </Project>

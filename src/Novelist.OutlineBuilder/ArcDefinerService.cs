@@ -7,76 +7,56 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates a concise multi‑act story arc
-    /// and advances the outline to ArcDefined.
+    /// Generates a multi‑act story arc and advances the outline.
     /// </summary>
     public sealed class ArcDefinerService
     {
         private readonly ILlmClient _llm;
-        public ArcDefinerService(ILlmClient llm) => _llm = llm;
+        private readonly bool       _includeAudience;
 
-        public async Task DefineArcAsync(
-            string outlinePath,
-            string modelId,
-            CancellationToken ct = default)
+        public ArcDefinerService(ILlmClient llm, bool includeAudience = true)
         {
-            var outlineJson =
-                JObject.Parse(await File.ReadAllTextAsync(outlinePath, ct));
-
-            if (!Enum.TryParse(
-                    outlineJson["outlineProgress"]?.ToString(),
-                    out OutlineProgress phase) ||
-                phase != OutlineProgress.PremiseExpanded)
-                throw new InvalidOperationException(
-                    "Outline is not in the PremiseExpanded phase.");
-
-            // ----------------------------------------------------------------
-            // Retrieve premise as non‑nullable string
-            // ----------------------------------------------------------------
-            var premise = outlineJson["premise"]?.ToString() ?? string.Empty;
-            var prompt  = BuildPrompt(premise);
-
-            var retries   = RetryPolicy.GetMaxRetries(modelId);
-            string? arc   = null;
-            Exception? ex = null;
-
-            for (var attempt = 1; attempt <= retries; attempt++)
-            {
-                try
-                {
-                    arc = await _llm
-                               .CompleteAsync(prompt, modelId, ct)
-                               .ConfigureAwait(false);
-
-                    if (!string.IsNullOrWhiteSpace(arc)) break;
-                }
-                catch (Exception err) when (attempt < retries)
-                {
-                    ex = err;
-                    await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(arc))
-                throw new InvalidOperationException(
-                    "LLM did not return a story arc.", ex);
-
-            outlineJson["storyArc"]        = arc.Trim();
-            outlineJson["outlineProgress"] = OutlineProgress.ArcDefined.ToString();
-            outlineJson["header"]!["schemaVersion"] =
-                outlineJson["header"]!["schemaVersion"]!.Value<int>() + 1;
-
-            await File.WriteAllTextAsync(
-                outlinePath, outlineJson.ToString(), ct);
+            _llm             = llm;
+            _includeAudience = includeAudience;
         }
 
-        private static string BuildPrompt(string premise) =>
+        public async Task DefineArcAsync(string outlinePath,
+                                         string modelId,
+                                         CancellationToken ct = default)
+        {
+            var outline = JObject.Parse(File.ReadAllText(outlinePath));
+
+            if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
+                               out OutlineProgress phase) ||
+                phase != OutlineProgress.PremiseExpanded)
+                throw new InvalidOperationException("Outline is not in the PremiseExpanded phase.");
+
+            var premise  = outline["premise"]!.ToString();
+            var genre    = outline["storyGenre"]?.ToString() ?? "General fiction";
+            var audience = outline["targetAudience"] as JArray;
+            var audienceLine = _includeAudience && audience is { Count: > 0 }
+                                ? $"Target audience: {string.Join(", ", audience)}."
+                                : string.Empty;
+
+            var prompt =
 $@"You are a narrative‑structure expert.
 
-Based on the premise below, write a concise multi‑act outline
-(three to five acts).  Return the outline as plain text paragraphs.
+Create a concise three‑ to five‑act outline (plain text, one paragraph per act)
+for the {genre} premise below. {audienceLine}
+
+Return ONLY the outline paragraphs (no markdown).
 
 PREMISE:
 {premise}";
+
+            var arc = await _llm.CompleteAsync(prompt, modelId, ct);
+
+            outline["storyArc"]        = arc.Trim();
+            outline["outlineProgress"] = OutlineProgress.ArcDefined.ToString();
+            outline["header"]!["schemaVersion"] =
+                outline["header"]!["schemaVersion"]!.Value<int>() + 1;
+
+            File.WriteAllText(outlinePath, outline.ToString());
+        }
     }
 }
