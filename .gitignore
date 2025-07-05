@@ -35,6 +35,9 @@ packages/
 artifacts/
 publish/
 dist/
+Novelist.OutlineBuilder/outlines/
+Novelist.Cli/outlines/
+outlines/
 
 #----------------------------------------------------------------------------
 # Configuration / secrets & environment files

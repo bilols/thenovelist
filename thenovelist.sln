@@ -4,13 +4,9 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Novelist.Cli", "src\Novelist.Cli\Novelist.Cli.csproj", "{55B7623C-01A6-AF99-584E-EF2D4DE97D5E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Novelist.OutlineBuilder", "src\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj", "{B1A63534-3A40-210D-83D6-7F2E4B1B4730}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Novelist.Tests", "tests\Novelist.Tests\Novelist.Tests.csproj", "{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,10 +22,6 @@ Global
 		{B1A63534-3A40-210D-83D6-7F2E4B1B4730}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1A63534-3A40-210D-83D6-7F2E4B1B4730}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1A63534-3A40-210D-83D6-7F2E4B1B4730}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -37,7 +29,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{55B7623C-01A6-AF99-584E-EF2D4DE97D5E} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B1A63534-3A40-210D-83D6-7F2E4B1B4730} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{5B955043-5EB8-D2D1-FAA4-3A2ABCE6D2BA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2BB9CFCB-FDF7-47E7-BEA7-C2489EC66A6F}

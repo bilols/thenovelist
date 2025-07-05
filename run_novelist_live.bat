@@ -9,9 +9,9 @@ REM ---------------------------------------------------------------------------
 
 REM -------- variables --------------------------------------------------------
 set CLI=src\Novelist.Cli
-set PROJECT_JSON=tests\samples\thedoor.project.json
+set PROJECT_JSON=src\samples\thedoor.project.json
 set OUTDIR=outlines
-set MODEL=gpt-4o-mini
+set MODEL=gpt-4o
 
 REM -------- ensure output directory exists -----------------------------------
 if not exist "%OUTDIR%" mkdir "%OUTDIR%"

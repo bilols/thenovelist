@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyTitle>Novelist Outline Builder</AssemblyTitle>
     <Description>Core library for generating and manipulating novelist story outlines.</Description>
-    <RepositoryUrl>https://github.com/your-org/novelist</RepositoryUrl>
+    <RepositoryUrl>https://github.com/bilols/thenovelist</RepositoryUrl>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
