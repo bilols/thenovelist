@@ -1,15 +1,14 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates chapter list (plus optional prologue/epilogue) and
-    /// advances the outline to StructureOutlined.
+    /// Generates chapter‑level structure and advances the outline to StructureOutlined.
     /// </summary>
     public sealed class StructureOutlinerService
     {
@@ -18,112 +17,108 @@ namespace Novelist.OutlineBuilder
 
         public StructureOutlinerService(ILlmClient llm, bool includeAudience = true)
         {
-            _llm             = llm;
+            _llm            = llm;
             _includeAudience = includeAudience;
         }
 
-        public async Task DefineStructureAsync(string outlinePath,
-                                               string modelId,
-                                               CancellationToken ct = default)
+        public async Task DefineStructureAsync(
+            string            outlinePath,
+            string            modelId,
+            CancellationToken ct = default)
         {
             var outline = JObject.Parse(File.ReadAllText(outlinePath));
 
+            // Accept both modern and legacy entry phases
             if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
                                out OutlineProgress phase) ||
-                phase != OutlineProgress.CharactersOutlined)
-                throw new InvalidOperationException("Outline is not in the CharactersOutlined phase.");
+                (phase != OutlineProgress.BeatsExpanded &&
+                 phase != OutlineProgress.CharactersOutlined))     // legacy
+            {
+                throw new InvalidOperationException(
+                    "Outline is not ready for structure definition.");
+            }
 
-            // ------------------------------------------------ project settings
-            var relProj = outline["header"]?["projectFile"]?.ToString()
-                          ?? throw new InvalidDataException("header.projectFile missing.");
+            int chapters = outline["chapterCount"]!.Value<int>();
+            int acts     = outline["storyArc"]!.Count();
 
-            var projectPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(outlinePath)!, relProj));
-            var project     = JObject.Parse(File.ReadAllText(projectPath));
+            var beatsPerAct = outline["storyArc"]![0]!["beats"]!.Count();
+            if (beatsPerAct == 0)
+                beatsPerAct = (chapters / acts) * 3; // fallback if beats not filled
 
-            bool wantPrologue  = project["includePrologue"]?.Value<bool>()  ?? false;
-            bool wantEpilogue  = project["includeEpilogue"]?.Value<bool>()  ?? false;
+            string premise = outline["premise"]!.ToString();
+            string genre   = outline["storyGenre"]?.ToString() ?? "General fiction";
 
-            int  coreChapters  = outline["chapterCount"]!.Value<int>();
-            int  totalExpected = coreChapters + (wantPrologue ? 1 : 0) + (wantEpilogue ? 1 : 0);
-            int  wordsPerChap  = outline["totalWordCount"]!.Value<int>() / coreChapters;
+            var audArr = outline["targetAudience"] as JArray;
+            string aud = _includeAudience && audArr is { Count: > 0 }
+                       ? $"Target audience: {string.Join(", ",
+                                                         audArr.Select(a => a.ToString()))}."
+                       : string.Empty;
 
-            // ------------------------------------------------ prompt pieces
-            var premise  = outline["premise"]!.ToString();
-            var arc      = outline["storyArc"]?.ToString() ?? "";
-            var roster   = outline["characters"]?.ToString() ?? "[]";
-            var audArr   = outline["targetAudience"] as JArray;
+            // Prompt includes acts, beats, and sub‑plots if present
+            var actsBlock = string.Join("\n\n",
+                outline["storyArc"]!.Select(a =>
+                    $"{a["act"]}: {a["definition"]}\n" +
+                    $"SUBPLOTS: {string.Join("; ", a["sub_plots"]!)}\n" +
+                    $"BEATS: {string.Join(" | ", a["beats"]!)}"));
 
-            string audienceLine = _includeAudience && audArr is { Count: > 0 }
-                ? $"Target audience: {string.Join(", ", audArr)}."
-                : string.Empty;
+            var prompt =
+$@"You are a seasoned editor.
 
-            string prologueLine = wantPrologue
-                ? "Include a Prologue object first (number = 0)."
-                : "";
+The novel has {chapters} chapters arranged across {acts} acts.
+Each chapter should be summarised in 1–2 sentences and include
+exactly 3 beats from the act.
 
-            string epilogueLine = wantEpilogue
-                ? "Include an Epilogue object last (number = N+1)."
-                : "";
+Return ONLY a raw JSON array where each element is:
+{{ ""number"": <int>, ""summary"": ""..."", ""beats"": [ ""beat1"", ""beat2"", ""beat3"" ] }}
 
-            string prompt =
-$@"You are a seasoned story‑structure editor.
+If you cannot comply, reply RETRY.
 
-Return ONLY a JSON array with {totalExpected} objects:
+{aud}
+Genre: {genre}.
 
-  {prologueLine}
-  • {coreChapters} numbered chapters (1‑based)
-  {epilogueLine}
-
-Each object must have:
-  ""number""  : integer
-  ""summary"" : ≤80 words
-  ""beats""   : 3‑6 lines
-  ""themes""  : optional 1‑3 tags
-
-{audienceLine}
-
-If you cannot comply, reply exactly: RETRY
-
-MATERIAL
 Premise:
 {premise}
 
-Arc:
-{arc}
+ACT / SUB‑PLOT / BEAT GRID:
+{actsBlock}";
 
-Characters:
-{roster}
+            int    max  = RetryPolicy.GetMaxRetries(modelId);
+            JArray? arr = null;
 
-Average words per chapter: ~{wordsPerChap}";
-
-            // ------------------------------------------------ retry loop
-            int     max   = RetryPolicy.GetMaxRetries(modelId);
-            JArray? arr   = null;  Exception? last = null;
-
-            for (int attempt = 1; attempt <= max; attempt++)
+            for (int i = 1; i <= max; i++)
             {
+                var reply = await _llm.CompleteAsync(prompt, modelId, ct);
+
+                if (string.Equals(reply.Trim(), "RETRY",
+                                  StringComparison.OrdinalIgnoreCase))
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
+                    continue;
+                }
+
+                if (!TryExtractJsonArray(reply, out var jsonFrag))
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
+                    continue;
+                }
+
                 try
                 {
-                    string raw = await _llm.CompleteAsync(prompt, modelId, ct);
-                    string txt = Sanitize(raw);
-
-                    if (txt.Equals("RETRY", StringComparison.OrdinalIgnoreCase) ||
-                        !txt.TrimStart().StartsWith("["))
-                        throw new JsonReaderException("Model did not return JSON array.");
-
-                    arr = JArray.Parse(txt);
-                    if (arr.Count == totalExpected) break;
-                    throw new JsonReaderException("Incorrect item count.");
+                    arr = JArray.Parse(jsonFrag);
+                    if (arr.Count == chapters)
+                        break;
                 }
-                catch (Exception ex) when (attempt < max)
+                catch
                 {
-                    last = ex;
-                    await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
+                    // ignore and retry
                 }
+
+                await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
             }
 
-            if (arr is null || arr.Count != totalExpected)
-                throw new InvalidOperationException("Unable to obtain valid chapter array.", last);
+            if (arr is null || arr.Count != chapters)
+                throw new InvalidOperationException(
+                    "LLM failed to return the expected chapter list.");
 
             outline["chapters"]        = arr;
             outline["outlineProgress"] = OutlineProgress.StructureOutlined.ToString();
@@ -133,18 +128,33 @@ Average words per chapter: ~{wordsPerChap}";
             File.WriteAllText(outlinePath, outline.ToString());
         }
 
-        // --------------------------------------------------------------------
-        private static string Sanitize(string raw)
+        // ---------------------------------------------------------------------
+        //  Helpers
+        // ---------------------------------------------------------------------
+
+        private static bool TryExtractJsonArray(string input, out string json)
         {
-            string t = raw.Trim();
-            if (t.StartsWith("```"))
+            json = string.Empty;
+            string s = input.Trim();
+
+            if (s.StartsWith("```"))
             {
-                int firstNL   = t.IndexOf('\n');
-                int lastFence = t.LastIndexOf("```", StringComparison.Ordinal);
-                if (firstNL >= 0 && lastFence > firstNL)
-                    return t.Substring(firstNL + 1, lastFence - firstNL - 1).Trim();
+                int first = s.IndexOf('\n');
+                int last  = s.LastIndexOf("```", StringComparison.Ordinal);
+                if (first >= 0 && last > first)
+                    s = s.Substring(first + 1, last - first - 1).Trim();
             }
-            return t;
+
+            int open  = s.IndexOf('[');
+            int close = s.LastIndexOf(']');
+
+            if (open >= 0 && close > open)
+            {
+                json = s.Substring(open, close - open + 1).Trim();
+                return true;
+            }
+
+            return false;
         }
     }
 }

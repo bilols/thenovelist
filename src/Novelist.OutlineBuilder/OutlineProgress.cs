@@ -9,7 +9,9 @@ namespace Novelist.OutlineBuilder
         PremiseExpanded,
         ArcDefined,
         CharactersOutlined,
-        StructureOutlined, 
+        SubPlotsDefined,
+        BeatsExpanded,
+        StructureOutlined,
         BeatsDetailed,
         Finalized
     }

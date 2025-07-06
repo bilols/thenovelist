@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id":     "https://novelist.ai/schemas/project.schema.v1.json",
-  "title":   "Novelist Project File (v1)",
-  "type":    "object",
+  "$id": "https://novelist.ai/schemas/project.schema.v1.json",
+  "title": "Novelist Project File (v1)",
+  "type": "object",
   "required": [
     "header",
     "workingTitle",
@@ -12,10 +12,10 @@
     "totalWordCount",
     "chapterCount",
     "gptModel",
-    "targetAudience"
+    "targetAudience",
+    "subPlotDepth"
   ],
   "additionalProperties": false,
-
   "definitions": {
     "audience": {
       "type": "string",
@@ -28,7 +28,6 @@
       ]
     }
   },
-
   "properties": {
     "header": {
       "type": "object",
@@ -36,39 +35,45 @@
       "additionalProperties": false,
       "properties": {
         "schemaVersion": { "type": "integer", "minimum": 1 },
-        "dateCreated":   { "type": "string", "format": "date-time" },
-        "generator":     { "type": "string" },
+        "dateCreated": { "type": "string", "format": "date-time" },
+        "generator": { "type": "string" },
         "generatorVersion": { "type": "string" },
-        "modelUsed":        { "type": "string" }
+        "modelUsed": { "type": "string" }
       }
     },
 
-    "workingTitle":   { "type": "string", "minLength": 1 },
-    "authorName":     { "type": "string", "minLength": 1 },
-    "storyPremise":   { "type": "string", "minLength": 150, "maxLength": 4000 },
-    "storyGenre":     { "type": "string", "minLength": 1 },
+    "workingTitle": { "type": "string", "minLength": 1 },
+    "authorName":  { "type": "string", "minLength": 1 },
+    "storyPremise": { "type": "string", "minLength": 150, "maxLength": 4000 },
+    "storyGenre": { "type": "string", "minLength": 1 },
 
-    "totalWordCount": { "type": "integer", "minimum": 5000,  "maximum": 250000 },
-    "chapterCount":   { "type": "integer", "minimum": 1,     "maximum": 100  },
-    "wordsPerChapter":{ "type": "integer", "readOnly": true },
+    "totalWordCount": { "type": "integer", "minimum": 5000, "maximum": 250000 },
+    "chapterCount":  { "type": "integer", "minimum": 1, "maximum": 100 },
+    "wordsPerChapter": { "type": "integer", "readOnly": true },
 
-    "includePrologue":    { "type": "boolean", "default": false },
-    "prologueWordCount":  { "type": "integer", "minimum": 1 },
-    "includeEpilogue":    { "type": "boolean", "default": false },
-    "epilogueWordCount":  { "type": "integer", "minimum": 1 },
+    "includePrologue":   { "type": "boolean", "default": false },
+    "prologueWordCount": { "type": "integer", "minimum": 1 },
+    "includeEpilogue":   { "type": "boolean", "default": false },
+    "epilogueWordCount": { "type": "integer", "minimum": 1 },
 
     "famousAuthorPreset": {
-      "type":    [ "string", "null" ],
+      "type": [ "string", "null" ],
       "pattern": "^[A-Za-z0-9_\\-]+\\.json$"
     },
 
     "gptModel": {
       "type": "string",
       "enum": [
-        "gpt-3.5-turbo", "gpt-3.5-turbo-16k",
-        "gpt-4", "gpt-4o-mini", "gpt-4o",
-        "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano",
-        "gpt-4-turbo", "gpt-4.5-preview"
+        "gpt-3.5-turbo",
+        "gpt-3.5-turbo-16k",
+        "gpt-4",
+        "gpt-4o-mini",
+        "gpt-4o",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "gpt-4-turbo",
+        "gpt-4.5-preview"
       ],
       "default": "gpt-4o-mini"
     },
@@ -81,22 +86,29 @@
     },
 
     "additionalProtagonists": {
-      "type":    "integer",
+      "type": "integer",
       "minimum": 0,
       "maximum": 6,
       "default": 0
     },
     "supportingCharacters": {
-      "type":    "integer",
+      "type": "integer",
       "minimum": 0,
       "maximum": 6,
       "default": 2
     },
-    "minorCharacters":      {
-      "type":    "integer",
+    "minorCharacters": {
+      "type": "integer",
       "minimum": 0,
       "maximum": 6,
       "default": 0
+    },
+
+    "subPlotDepth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "default": 1
     }
   }
 }
