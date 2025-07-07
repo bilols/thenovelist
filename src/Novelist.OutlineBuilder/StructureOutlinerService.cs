@@ -29,7 +29,6 @@ namespace Novelist.OutlineBuilder
         {
             var outline = JObject.Parse(File.ReadAllText(outlinePath));
 
-            // Accept both modern and legacy entry phases
             if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
                                out OutlineProgress phase) ||
                 (phase != OutlineProgress.BeatsExpanded &&
@@ -39,11 +38,9 @@ namespace Novelist.OutlineBuilder
                     "Outline is not ready for structure definition.");
             }
 
-            // ---------- static values ----------------------------------------
             int chapters = outline["chapterCount"]!.Value<int>();
             int acts     = outline["storyArc"]!.Count();
 
-            // project settings for validation
             int depth = 0;
             {
                 var rel = outline["header"]?["projectFile"]?.ToString();
@@ -55,7 +52,6 @@ namespace Novelist.OutlineBuilder
                 }
             }
 
-            // beats per act: fall back to formula if beats array empty
             int beatsPerAct = outline["storyArc"]![0]!["beats"]!.Count();
             if (beatsPerAct == 0)
                 beatsPerAct = (chapters / acts) * 3;
@@ -85,16 +81,17 @@ namespace Novelist.OutlineBuilder
             var prompt =
 $@"You are a seasoned development editor.
 
-The novel has {chapters} chapters distributed across {acts} acts.
-For each chapter, produce:
+The novel has {chapters} chapters across {acts} acts.
+For each chapter, create:
 
-  ""number""   : integer 1‑based
-  ""summary""  : 1 – 2 sentences
-  ""beats""    : exactly 3 strings (taken from the act's beat list)
-  ""sub_plots"": 0 – {depth} strings (chapter‑specific refinements)
+  ""number""   : 1‑based integer
+  ""summary""  : 1–2 sentences
+  ""beats""    : exactly 3 strings drawn from the act's beat list
+  ""sub_plots"": 1–{depth} strings, each beginning with its ID (S1:, S2:, …)
 
-Return ONLY a raw JSON array of chapter objects in order.
-If you cannot comply, reply RETRY.
+You must include AT LEAST one subplot line per chapter.
+
+Return ONLY a raw JSON array.  If you cannot comply, reply RETRY.
 
 {aud}
 Genre: {genre}.
@@ -129,7 +126,7 @@ ACT / BEAT / SUB_PLOT GRID:
                 try
                 {
                     var arr = JArray.Parse(jsonFrag);
-                    if (Validate(arr, chapters, beatsPerAct, depth))
+                    if (Validate(arr, chapters, depth))
                     {
                         chaptersArray = arr;
                         break;
@@ -159,37 +156,38 @@ ACT / BEAT / SUB_PLOT GRID:
         //  Validation helpers
         // ---------------------------------------------------------------------
 
-        private static bool Validate(JArray arr, int expectedChapters,
-                                     int beatsPerChapter, int depth)
+        private static bool Validate(JArray arr, int expectedChapters, int depth)
         {
-            if (arr.Count != expectedChapters)
-                return false;
+            if (arr.Count != expectedChapters) return false;
 
-            foreach (var node in arr)
+            var idSet = Enumerable.Range(1, depth)
+                                  .Select(i => $"S{i}:")
+                                  .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < arr.Count; i++)
             {
-                if (node.Type != JTokenType.Object)
+                var obj = arr[i] as JObject;
+                if (obj is null) return false;
+
+                // must have beats array length 3
+                if (obj["beats"] is not JArray beats || beats.Count != 3) return false;
+
+                // ensure sub_plots exists
+                if (obj["sub_plots"] is not JArray plots)
                     return false;
 
-                var obj = (JObject)node;
-
-                if (!obj.ContainsKey("number")   ||
-                    !obj.ContainsKey("summary")  ||
-                    !obj.ContainsKey("beats"))
+                if (plots.Count == 0 || plots.Count > depth)
                     return false;
 
-                // beats must be array length 3
-                var beats = obj["beats"] as JArray;
-                if (beats is null || beats.Count != beatsPerChapter /  (beatsPerChapter/3))
-                    return false;
-
-                // ensure sub_plots array exists & length <= depth
-                if (!obj.ContainsKey("sub_plots") || obj["sub_plots"]!.Type != JTokenType.Array)
-                    obj["sub_plots"] = new JArray();
-
-                var plots = (JArray)obj["sub_plots"]!;
-                if (plots.Count > depth)
-                    obj["sub_plots"] = new JArray(plots.Take(depth));
+                // each entry must start with S#: prefix
+                foreach (var p in plots.Select(p => p.ToString()))
+                {
+                    if (!idSet.Any(id => p.TrimStart().StartsWith(id,
+                                            StringComparison.OrdinalIgnoreCase)))
+                        return false;
+                }
             }
+
             return true;
         }
 

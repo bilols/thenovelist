@@ -9,9 +9,8 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates evolving sub‑plots for every act.
-    /// Each act receives <c>subPlotDepth</c> descriptions that either
-    /// continue or replace earlier threads, ensuring variety.
+    /// Generates evolving sub‑plots for every act and prefixes each line with
+    /// S1:, S2:, … so threads can be traced in later stages.
     /// </summary>
     public sealed class SubPlotDefinerService
     {
@@ -53,7 +52,6 @@ namespace Novelist.OutlineBuilder
 
             if (depth == 0)
             {
-                // No sub‑plots requested – just clear arrays and advance.
                 foreach (var act in outline["storyArc"]!)
                     act["sub_plots"] = new JArray();
 
@@ -63,8 +61,8 @@ namespace Novelist.OutlineBuilder
             }
 
             // ------------------ build prompt ---------------------------------
-            string premise = outline["premiseExpanded"]?.ToString() ??
-                             outline["premise"]!.ToString();
+            string premise = outline["premiseExpanded"]?.ToString()
+                           ?? outline["premise"]!.ToString();
 
             string genre = project["storyGenre"]?.ToString() ?? "General fiction";
 
@@ -77,25 +75,22 @@ namespace Novelist.OutlineBuilder
                           .Select((a,idx) => $"Act {idx+1}: {a["definition"]}")
                           .ToArray();
 
+            string idLegend = string.Join(", ",
+                               Enumerable.Range(1, depth).Select(i => $"S{i}"));
+
             var prompt =
 $@"You are a narrative architect.
 
-Create {depth} sub‑plot threads that weave through the story.
-For EACH act, evolve these threads (continue, escalate, or
-conclude them). Do NOT repeat the exact sentence in a later act.
+Create {depth} subplot threads (IDs S1…S{depth}).  For EACH act, give the
+next stage of every thread.  Start each sentence with its ID followed by a
+colon, e.g.  ""S2: The rivalry escalates …"".
 
-Return a raw JSON object where each property is ""Act N"" (1‑based)
-and the value is an array of {depth} strings, one per sub‑plot
-description for that act.
+Return a raw JSON object:
+  {{ ""Act 1"": [ ""S1: …"", ""S2: …"" ], ""Act 2"": [ … ], … }}
 
-Example (depth = 2):
-{{
-  ""Act 1"": [""subplot‑A intro"", ""subplot‑B intro""],
-  ""Act 2"": [""subplot‑A complication"", ""subplot‑B twist""],
-  ""Act 3"": [""subplot‑A resolution"", ""subplot‑B resolution""]
-}}
+All arrays must contain exactly {depth} entries.
 
-No commentary, no markdown. If you cannot comply, reply RETRY.
+No commentary, no markdown.  If you cannot comply, reply RETRY.
 
 {aud}
 Genre: {genre}.
@@ -107,9 +102,9 @@ Main story arc:
 {string.Join("\n", actDefs)}";
 
             // ------------------ LLM / validation loop ------------------------
-            int         maxRetries = RetryPolicy.GetMaxRetries(modelId);
-            JObject?    result     = null;
-            Exception?  last       = null;
+            int        maxRetries = RetryPolicy.GetMaxRetries(modelId);
+            JObject?   result     = null;
+            Exception? last       = null;
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
@@ -158,7 +153,7 @@ Main story arc:
 
             if (result is null)
                 throw new InvalidOperationException(
-                    "LLM failed to produce evolving sub‑plots.", last);
+                    "LLM failed to produce valid sub‑plots.", last);
 
             // --------------- inject into outline -----------------------------
             for (int i = 0; i < acts; i++)
@@ -178,30 +173,33 @@ Main story arc:
 
         private static bool Validate(JObject obj, int acts, int depth)
         {
-            // Check keys
-            for (int i = 0; i < acts; i++)
+            // Check keys & prefixes
+            for (int a = 0; a < acts; a++)
             {
-                string k = $"Act {i + 1}";
-                if (!obj.ContainsKey(k)) return false;
+                string key = $"Act {a + 1}";
+                if (!obj.ContainsKey(key)) return false;
 
-                var arr = obj[k] as JArray;
+                var arr = obj[key] as JArray;
                 if (arr is null || arr.Count != depth) return false;
-                if (arr.Any(t => t.Type != JTokenType.String)) return false;
+
+                for (int d = 0; d < depth; d++)
+                {
+                    string expectedPrefix = $"S{d + 1}:";
+                    if (!arr[d]!.ToString().TrimStart().StartsWith(expectedPrefix,
+                           StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
             }
 
-            // Ensure not every act repeats sentences verbatim.
-            // For each subplot index, gather descriptions across acts.
+            // Each subplot sentence must evolve (not identical every act)
             for (int d = 0; d < depth; d++)
             {
                 var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 for (int a = 0; a < acts; a++)
-                {
-                    string desc = obj[$"Act {a + 1}"]![d]!.ToString().Trim();
-                    set.Add(desc);
-                }
-                if (set.Count == 1) // identical across all acts
-                    return false;
+                    set.Add(obj[$"Act {a + 1}"]![d]!.ToString().Trim());
+                if (set.Count == 1) return false;
             }
+
             return true;
         }
 
