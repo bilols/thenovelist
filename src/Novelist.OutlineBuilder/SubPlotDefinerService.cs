@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -8,8 +9,9 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates global sub‑plots and injects them into every act,
-    /// advancing the outline to SubPlotsDefined.
+    /// Generates evolving sub‑plots for every act.
+    /// Each act receives <c>subPlotDepth</c> descriptions that either
+    /// continue or replace earlier threads, ensuring variety.
     /// </summary>
     public sealed class SubPlotDefinerService
     {
@@ -37,6 +39,7 @@ namespace Novelist.OutlineBuilder
                     "Outline is not in the CharactersOutlined phase.");
             }
 
+            // ---------------- project & settings -----------------------------
             var rel = outline["header"]?["projectFile"]?.ToString()
                       ?? throw new InvalidDataException("header.projectFile missing.");
 
@@ -45,66 +48,71 @@ namespace Novelist.OutlineBuilder
             var project     = JObject.Parse(File.ReadAllText(projectPath));
 
             int depth = project["subPlotDepth"]?.Value<int>() ?? 1;
+            if (depth < 0) depth = 0;
+            int acts  = outline["storyArc"]!.Count();
 
-            // If depth == 0, skip generation but still advance phase.
-            if (depth <= 0)
+            if (depth == 0)
             {
+                // No sub‑plots requested – just clear arrays and advance.
                 foreach (var act in outline["storyArc"]!)
                     act["sub_plots"] = new JArray();
 
-                outline["outlineProgress"] = OutlineProgress.SubPlotsDefined.ToString();
-                outline["header"]!["schemaVersion"] =
-                    outline["header"]!["schemaVersion"]!.Value<int>() + 1;
-
+                AdvancePhase(outline, OutlineProgress.SubPlotsDefined);
                 File.WriteAllText(outlinePath, outline.ToString());
                 return;
             }
 
-            string premise = outline["premise"]!.ToString();
-            string genre   = project["storyGenre"]?.ToString() ?? "General fiction";
+            // ------------------ build prompt ---------------------------------
+            string premise = outline["premiseExpanded"]?.ToString() ??
+                             outline["premise"]!.ToString();
+
+            string genre = project["storyGenre"]?.ToString() ?? "General fiction";
 
             var audArr = project["targetAudience"] as JArray;
             string aud = _includeAudience && audArr is { Count: > 0 }
-                       ? $"Target audience: {string.Join(", ",
-                                                         audArr.Select(a => a.ToString()))}."
+                       ? $"Target audience: {string.Join(", ", audArr.Select(a => a.ToString()))}."
                        : string.Empty;
 
-            string hall = project["famousAuthorPreset"]?.ToString() ?? string.Empty;
-            string hallLine = !string.IsNullOrWhiteSpace(hall)
-                            ? $"Emulate the narrative flair of {hall.Replace(".json", "")} " +
-                              "while keeping originality."
-                            : string.Empty;
-
-            var acts = outline["storyArc"]!
-                       .Select(a => a["definition"]!.ToString())
-                       .ToArray();
+            var actDefs = outline["storyArc"]!
+                          .Select((a,idx) => $"Act {idx+1}: {a["definition"]}")
+                          .ToArray();
 
             var prompt =
-$@"You are a plotting assistant.
+$@"You are a narrative architect.
 
-Create exactly {depth} distinct one-sentence sub-plots
-that will weave through ALL acts of the main story.
-Return ONLY a raw JSON array of strings. If you cannot comply, reply RETRY.
+Create {depth} sub‑plot threads that weave through the story.
+For EACH act, evolve these threads (continue, escalate, or
+conclude them). Do NOT repeat the exact sentence in a later act.
+
+Return a raw JSON object where each property is ""Act N"" (1‑based)
+and the value is an array of {depth} strings, one per sub‑plot
+description for that act.
+
+Example (depth = 2):
+{{
+  ""Act 1"": [""subplot‑A intro"", ""subplot‑B intro""],
+  ""Act 2"": [""subplot‑A complication"", ""subplot‑B twist""],
+  ""Act 3"": [""subplot‑A resolution"", ""subplot‑B resolution""]
+}}
+
+No commentary, no markdown. If you cannot comply, reply RETRY.
 
 {aud}
-{hallLine}
 Genre: {genre}.
 
-Premise:
+Premise / stakes:
 {premise}
 
-MAIN ACT DEFINITIONS:
-{string.Join("\n", acts)}";
+Main story arc:
+{string.Join("\n", actDefs)}";
 
-            int         max   = RetryPolicy.GetMaxRetries(modelId);
-            JArray?     subs  = null;
-            Exception?  last  = null;
+            // ------------------ LLM / validation loop ------------------------
+            int         maxRetries = RetryPolicy.GetMaxRetries(modelId);
+            JObject?    result     = null;
+            Exception?  last       = null;
 
-            int attempt = 0;
-            while (attempt < max)
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                attempt++;
-
                 string reply;
                 try
                 {
@@ -117,17 +125,14 @@ MAIN ACT DEFINITIONS:
                     continue;
                 }
 
-                reply = reply.Trim();
-
-                // Model explicitly declined
-                if (string.Equals(reply, "RETRY", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(reply.Trim(), "RETRY",
+                                  StringComparison.OrdinalIgnoreCase))
                 {
                     await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
                     continue;
                 }
 
-                // Try to extract a JSON array from the reply
-                if (!TryExtractJsonArray(reply, out var jsonFragment))
+                if (!TryExtractJsonObject(reply, out var jsonFrag))
                 {
                     await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
                     continue;
@@ -135,9 +140,13 @@ MAIN ACT DEFINITIONS:
 
                 try
                 {
-                    subs = JArray.Parse(jsonFragment);
-                    if (subs.Count == depth)
-                        break; // success
+                    var obj = JObject.Parse(jsonFrag);
+
+                    if (Validate(obj, acts, depth))
+                    {
+                        result = obj;
+                        break;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -147,34 +156,60 @@ MAIN ACT DEFINITIONS:
                 await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
             }
 
-            if (subs is null || subs.Count != depth)
+            if (result is null)
                 throw new InvalidOperationException(
-                    "LLM failed to return correct sub-plot list.", last);
+                    "LLM failed to produce evolving sub‑plots.", last);
 
-            foreach (var act in outline["storyArc"]!)
-                act["sub_plots"] = new JArray(subs.Select(s => s.DeepClone()));
+            // --------------- inject into outline -----------------------------
+            for (int i = 0; i < acts; i++)
+            {
+                string key = $"Act {i + 1}";
+                var arr = (JArray)result[key]!;
+                outline["storyArc"]![i]!["sub_plots"] = arr;
+            }
 
-            outline["outlineProgress"] = OutlineProgress.SubPlotsDefined.ToString();
-            outline["header"]!["schemaVersion"] =
-                outline["header"]!["schemaVersion"]!.Value<int>() + 1;
-
+            AdvancePhase(outline, OutlineProgress.SubPlotsDefined);
             File.WriteAllText(outlinePath, outline.ToString());
         }
 
         // ---------------------------------------------------------------------
-        //  Helpers
+        //  Validation helpers
         // ---------------------------------------------------------------------
 
-        /// <summary>
-        /// Attempts to pull the first JSON array found in the string.
-        /// Handles code fences and extra commentary.
-        /// </summary>
-        private static bool TryExtractJsonArray(string input, out string json)
+        private static bool Validate(JObject obj, int acts, int depth)
+        {
+            // Check keys
+            for (int i = 0; i < acts; i++)
+            {
+                string k = $"Act {i + 1}";
+                if (!obj.ContainsKey(k)) return false;
+
+                var arr = obj[k] as JArray;
+                if (arr is null || arr.Count != depth) return false;
+                if (arr.Any(t => t.Type != JTokenType.String)) return false;
+            }
+
+            // Ensure not every act repeats sentences verbatim.
+            // For each subplot index, gather descriptions across acts.
+            for (int d = 0; d < depth; d++)
+            {
+                var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int a = 0; a < acts; a++)
+                {
+                    string desc = obj[$"Act {a + 1}"]![d]!.ToString().Trim();
+                    set.Add(desc);
+                }
+                if (set.Count == 1) // identical across all acts
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool TryExtractJsonObject(string input, out string json)
         {
             json = string.Empty;
             string s = input.Trim();
 
-            // Remove ```json fences if present
             if (s.StartsWith("```"))
             {
                 int first = s.IndexOf('\n');
@@ -183,16 +218,22 @@ MAIN ACT DEFINITIONS:
                     s = s.Substring(first + 1, last - first - 1).Trim();
             }
 
-            int open  = s.IndexOf('[');
-            int close = s.LastIndexOf(']');
+            int open  = s.IndexOf('{');
+            int close = s.LastIndexOf('}');
 
             if (open >= 0 && close > open)
             {
                 json = s.Substring(open, close - open + 1).Trim();
                 return true;
             }
-
             return false;
+        }
+
+        private static void AdvancePhase(JObject outline, OutlineProgress next)
+        {
+            outline["outlineProgress"] = next.ToString();
+            outline["header"]!["schemaVersion"] =
+                outline["header"]!["schemaVersion"]!.Value<int>() + 1;
         }
     }
 }

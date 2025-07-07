@@ -8,7 +8,8 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates chapter‑level structure and advances the outline to StructureOutlined.
+    /// Generates chapter‑level structure (summary + beats + sub_plots)
+    /// and advances the outline to StructureOutlined.
     /// </summary>
     public sealed class StructureOutlinerService
     {
@@ -32,20 +33,36 @@ namespace Novelist.OutlineBuilder
             if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
                                out OutlineProgress phase) ||
                 (phase != OutlineProgress.BeatsExpanded &&
-                 phase != OutlineProgress.CharactersOutlined))     // legacy
+                 phase != OutlineProgress.CharactersOutlined))
             {
                 throw new InvalidOperationException(
                     "Outline is not ready for structure definition.");
             }
 
+            // ---------- static values ----------------------------------------
             int chapters = outline["chapterCount"]!.Value<int>();
             int acts     = outline["storyArc"]!.Count();
 
-            var beatsPerAct = outline["storyArc"]![0]!["beats"]!.Count();
-            if (beatsPerAct == 0)
-                beatsPerAct = (chapters / acts) * 3; // fallback if beats not filled
+            // project settings for validation
+            int depth = 0;
+            {
+                var rel = outline["header"]?["projectFile"]?.ToString();
+                if (rel is not null)
+                {
+                    var proj = JObject.Parse(File.ReadAllText(
+                                 Path.Combine(Path.GetDirectoryName(outlinePath)!, rel)));
+                    depth = proj["subPlotDepth"]?.Value<int>() ?? 0;
+                }
+            }
 
-            string premise = outline["premise"]!.ToString();
+            // beats per act: fall back to formula if beats array empty
+            int beatsPerAct = outline["storyArc"]![0]!["beats"]!.Count();
+            if (beatsPerAct == 0)
+                beatsPerAct = (chapters / acts) * 3;
+
+            string premise = outline["premiseExpanded"]?.ToString()
+                           ?? outline["premise"]!.ToString();
+
             string genre   = outline["storyGenre"]?.ToString() ?? "General fiction";
 
             var audArr = outline["targetAudience"] as JArray;
@@ -54,23 +71,29 @@ namespace Novelist.OutlineBuilder
                                                          audArr.Select(a => a.ToString()))}."
                        : string.Empty;
 
-            // Prompt includes acts, beats, and sub‑plots if present
+            // ---------- build ACT / BEAT / SUB‑PLOT grid ---------------------
             var actsBlock = string.Join("\n\n",
-                outline["storyArc"]!.Select(a =>
-                    $"{a["act"]}: {a["definition"]}\n" +
-                    $"SUBPLOTS: {string.Join("; ", a["sub_plots"]!)}\n" +
-                    $"BEATS: {string.Join(" | ", a["beats"]!)}"));
+                outline["storyArc"]!.Select((a,idx) =>
+                {
+                    var beats = string.Join(" | ", a["beats"]!.Select(b => b.ToString()));
+                    var plots = string.Join("; ",  a["sub_plots"]!.Select(p => p.ToString()));
+                    return $"Act {idx+1}: {a["definition"]}\n" +
+                           $"SUB_PLOTS: {plots}\nBEATS: {beats}";
+                }));
 
+            // ---------- prompt ----------------------------------------------
             var prompt =
-$@"You are a seasoned editor.
+$@"You are a seasoned development editor.
 
-The novel has {chapters} chapters arranged across {acts} acts.
-Each chapter should be summarised in 1–2 sentences and include
-exactly 3 beats from the act.
+The novel has {chapters} chapters distributed across {acts} acts.
+For each chapter, produce:
 
-Return ONLY a raw JSON array where each element is:
-{{ ""number"": <int>, ""summary"": ""..."", ""beats"": [ ""beat1"", ""beat2"", ""beat3"" ] }}
+  ""number""   : integer 1‑based
+  ""summary""  : 1 – 2 sentences
+  ""beats""    : exactly 3 strings (taken from the act's beat list)
+  ""sub_plots"": 0 – {depth} strings (chapter‑specific refinements)
 
+Return ONLY a raw JSON array of chapter objects in order.
 If you cannot comply, reply RETRY.
 
 {aud}
@@ -79,48 +102,52 @@ Genre: {genre}.
 Premise:
 {premise}
 
-ACT / SUB‑PLOT / BEAT GRID:
+ACT / BEAT / SUB_PLOT GRID:
 {actsBlock}";
 
-            int    max  = RetryPolicy.GetMaxRetries(modelId);
-            JArray? arr = null;
+            // ---------- LLM loop --------------------------------------------
+            int    maxRetries = RetryPolicy.GetMaxRetries(modelId);
+            JArray? chaptersArray = null;
 
-            for (int i = 1; i <= max; i++)
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
                 var reply = await _llm.CompleteAsync(prompt, modelId, ct);
 
                 if (string.Equals(reply.Trim(), "RETRY",
                                   StringComparison.OrdinalIgnoreCase))
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
+                    await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
                     continue;
                 }
 
                 if (!TryExtractJsonArray(reply, out var jsonFrag))
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
+                    await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
                     continue;
                 }
 
                 try
                 {
-                    arr = JArray.Parse(jsonFrag);
-                    if (arr.Count == chapters)
+                    var arr = JArray.Parse(jsonFrag);
+                    if (Validate(arr, chapters, beatsPerAct, depth))
+                    {
+                        chaptersArray = arr;
                         break;
+                    }
                 }
                 catch
                 {
-                    // ignore and retry
+                    // ignore & retry
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(i * 2), ct);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
             }
 
-            if (arr is null || arr.Count != chapters)
+            if (chaptersArray is null)
                 throw new InvalidOperationException(
-                    "LLM failed to return the expected chapter list.");
+                    "LLM failed to return valid chapter list.");
 
-            outline["chapters"]        = arr;
+            outline["chapters"]        = chaptersArray;
             outline["outlineProgress"] = OutlineProgress.StructureOutlined.ToString();
             outline["header"]!["schemaVersion"] =
                 outline["header"]!["schemaVersion"]!.Value<int>() + 1;
@@ -129,8 +156,42 @@ ACT / SUB‑PLOT / BEAT GRID:
         }
 
         // ---------------------------------------------------------------------
-        //  Helpers
+        //  Validation helpers
         // ---------------------------------------------------------------------
+
+        private static bool Validate(JArray arr, int expectedChapters,
+                                     int beatsPerChapter, int depth)
+        {
+            if (arr.Count != expectedChapters)
+                return false;
+
+            foreach (var node in arr)
+            {
+                if (node.Type != JTokenType.Object)
+                    return false;
+
+                var obj = (JObject)node;
+
+                if (!obj.ContainsKey("number")   ||
+                    !obj.ContainsKey("summary")  ||
+                    !obj.ContainsKey("beats"))
+                    return false;
+
+                // beats must be array length 3
+                var beats = obj["beats"] as JArray;
+                if (beats is null || beats.Count != beatsPerChapter /  (beatsPerChapter/3))
+                    return false;
+
+                // ensure sub_plots array exists & length <= depth
+                if (!obj.ContainsKey("sub_plots") || obj["sub_plots"]!.Type != JTokenType.Array)
+                    obj["sub_plots"] = new JArray();
+
+                var plots = (JArray)obj["sub_plots"]!;
+                if (plots.Count > depth)
+                    obj["sub_plots"] = new JArray(plots.Take(depth));
+            }
+            return true;
+        }
 
         private static bool TryExtractJsonArray(string input, out string json)
         {

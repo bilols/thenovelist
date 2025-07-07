@@ -29,6 +29,10 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "string", "minLength": 1 }
+        },
+        "sub_plots": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
         }
       }
     },
@@ -76,7 +80,8 @@
       ]
     },
 
-    "premise": { "type": "string", "minLength": 1 },
+    "premise":          { "type": "string", "minLength": 1 },
+    "premiseExpanded":  { "type": "string" },
 
     "storyArc": {
       "type": "array",

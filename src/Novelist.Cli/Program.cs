@@ -17,9 +17,9 @@ namespace Novelist.Cli
                          .AddEnvironmentVariables()
                          .Build();
 
-            bool live          = false;
-            bool authorPreset  = false;
-            bool includeAud    = true;
+            bool live         = false;
+            bool authorPreset = false;
+            bool includeAud   = true;
 
             var list = new System.Collections.Generic.List<string>(args);
 
@@ -69,20 +69,20 @@ namespace Novelist.Cli
 
             return (args[0].ToLowerInvariant(), args[1].ToLowerInvariant()) switch
             {
-                ("outline", "create")               => RunCreate(args[2..]),
-                ("outline", "expand-premise")       => RunExpand(args[2..], client, includeAud),
-                ("outline", "define-arc")           => RunArc(args[2..], client, includeAud),
-                ("outline", "define-characters")    => RunChars(args[2..], client, authorPreset, includeAud),
-                ("outline", "define-subplots")      => RunSubPlots(args[2..], client, includeAud),
-                ("outline", "expand-beats")         => RunBeats(args[2..], client, includeAud),
-                ("outline", "define-structure")     => RunStruct(args[2..], client, includeAud),
-                ("outline", "mark-premise-expanded")=> RunMark(args[2..]),
-                _                                   => Help()
+                ("outline", "create")                => RunCreate(args[2..]),
+                ("outline", "expand-premise")        => RunExpand(args[2..], client, includeAud),
+                ("outline", "define-arc")            => RunArc(args[2..], client, includeAud),
+                ("outline", "define-characters")     => RunChars(args[2..], client, authorPreset, includeAud),
+                ("outline", "define-subplots")       => RunSubPlots(args[2..], client, includeAud),
+                ("outline", "expand-beats")          => RunBeats(args[2..], client, includeAud),
+                ("outline", "define-structure")      => RunStruct(args[2..], client, includeAud),
+                ("outline", "mark-premise-expanded") => RunMark(args[2..]),
+                _                                    => Help()
             };
         }
 
         // ---------------------------------------------------------------------
-        //  Helpers
+        //  Live client
         // ---------------------------------------------------------------------
 
         private static ILlmClient? CreateLiveClient(IConfiguration cfg)
@@ -105,7 +105,7 @@ namespace Novelist.Cli
         }
 
         // ---------------------------------------------------------------------
-        //  Individual command runners
+        //  Command runners
         // ---------------------------------------------------------------------
 
         private static int RunCreate(string[] a)
@@ -125,6 +125,7 @@ namespace Novelist.Cli
             return Ok($"Outline created: {path}");
         }
 
+        // ---------- updated -----------------------------------------------
         private static int RunExpand(string[] a, ILlmClient llm, bool aud)
         {
             if (!Try(a, "--outline", out var o))
@@ -132,12 +133,21 @@ namespace Novelist.Cli
 
             var model = Get(a, "--model", "gpt-4o-mini");
 
+            int maxWords = 250; // default
+            if (Try(a, "--premise-words", out var wStr))
+            {
+                if (!int.TryParse(wStr, out maxWords) ||
+                    maxWords < 150 || maxWords > 350)
+                    return Err("--premise-words must be an integer 150-350");
+            }
+
             new PremiseExpanderService(llm, aud)
-               .ExpandPremiseAsync(o, model).Wait();
+               .ExpandPremiseAsync(o, model, maxWords).Wait();
 
             SaveSnapshot(o);
             return Ok("Premise expanded.");
         }
+        // ------------------------------------------------------------------
 
         private static int RunArc(string[] a, ILlmClient llm, bool aud)
         {
@@ -154,10 +164,10 @@ namespace Novelist.Cli
         }
 
         private static int RunChars(
-            string[]     a,
-            ILlmClient   llm,
-            bool         preset,
-            bool         aud)
+            string[]   a,
+            ILlmClient llm,
+            bool       preset,
+            bool       aud)
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
@@ -182,7 +192,7 @@ namespace Novelist.Cli
                .DefineSubPlotsAsync(o, model).Wait();
 
             SaveSnapshot(o);
-            return Ok("Sub‑plots defined.");
+            return Ok("Sub-plots defined.");
         }
 
         private static int RunBeats(string[] a, ILlmClient llm, bool aud)
@@ -239,23 +249,20 @@ namespace Novelist.Cli
 
                 var dir  = Path.GetDirectoryName(path)!;
                 var name = Path.GetFileNameWithoutExtension(path);
-
                 var dest = Path.Combine(dir, $"{name}_{phase}.json");
-                File.Copy(path, dest, true);
 
+                File.Copy(path, dest, true);
                 AnsiConsole.MarkupLine($"[grey]Snapshot saved: {dest}[/]");
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine(
-                    $"[yellow]Warning: snapshot failed – {ex.Message}[/]");
+                AnsiConsole.MarkupLine($"[yellow]Warning: snapshot failed – {ex.Message}[/]");
             }
         }
 
         private static bool Try(string[] a, string f, out string v)
         {
             v = string.Empty;
-
             for (int i = 0; i + 1 < a.Length; i++)
             {
                 if (a[i] == f)
@@ -286,31 +293,21 @@ namespace Novelist.Cli
         {
             AnsiConsole.MarkupLine("[bold]Novelist CLI[/]");
 
-            AnsiConsole.MarkupLine(
-                " outline create --project <file> [--output <dir>] [-s]");
-            AnsiConsole.MarkupLine(
-                " outline expand-premise --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline define-arc --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline define-characters --outline <file> [--model <id>] [-l] [-s] [-p] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline define-subplots --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline expand-beats --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline define-structure --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(
-                " outline mark-premise-expanded --outline <file> [-s]");
-
+            AnsiConsole.MarkupLine(" outline create --project <file> [--output <dir>] [-s]");
+            AnsiConsole.MarkupLine(" outline expand-premise --outline <file> [--premise-words <150-350>] [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.MarkupLine(" outline define-arc --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.MarkupLine(" outline define-characters --outline <file> [--model <id>] [-l] [-s] [-p] [-na]");
+            AnsiConsole.MarkupLine(" outline define-subplots --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.MarkupLine(" outline expand-beats --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.MarkupLine(" outline define-structure --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.MarkupLine(" outline mark-premise-expanded --outline <file> [-s]");
             AnsiConsole.MarkupLine("");
-            AnsiConsole.MarkupLine(
-                "Flags: -l live | -s snapshot | -p author‑preset | -na no‑audience");
+            AnsiConsole.MarkupLine("Flags: -l live | -s snapshot | -p author-preset | -na no-audience");
 
             return 0;
         }
 
-        /// <summary>Offline stub so the CLI can run without API calls.</summary>
+        /// <summary>Offline stub – always returns [].</summary>
         private sealed class Stub : ILlmClient
         {
             public System.Threading.Tasks.Task<string> CompleteAsync(
