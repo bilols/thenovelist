@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using Newtonsoft.Json.Linq;
 
@@ -7,17 +8,34 @@ namespace Novelist.DraftBuilder
     {
         public static DraftStyleOptions Load(string presetDir, string presetFile)
         {
-            string path = Path.Combine(presetDir, presetFile);
-            var j      = JObject.Parse(File.ReadAllText(path));
+            try
+            {
+                if (string.IsNullOrWhiteSpace(presetFile))
+                    return Neutral();
 
-            return new DraftStyleOptions(
-                Voice:             j["voice"]?.ToString()           ?? "Neutral",
-                LexicalDensity:    j["lexical_density"]?.Value<double>() ?? 0.45,
-                SentenceLength:    j["sentence_length"]?.Value<int>()    ?? 15,
-                Hallmarks:         string.Join("; ", j["hallmarks"] ?? new JArray()),
-                PreferredTone:     j["preferred_tone"]?.ToString()   ?? "Neutral",
-                ForbiddenElements: j["formatting_rules"]?["forbidden_elements"]?.ToString() ?? "",
-                AuthorName:        Path.GetFileNameWithoutExtension(presetFile));
+                var path = Path.Combine(presetDir, presetFile);
+                if (!File.Exists(path))
+                    return Neutral();
+
+                var j = JObject.Parse(File.ReadAllText(path));
+
+                return new DraftStyleOptions(
+                    j["voice"]?.ToString() ?? "Neutral",
+                    j["lexical_density"]?.Value<double>() ?? 0.45,
+                    j["sentence_length"]?.Value<int>() ?? 15,
+                    string.Join("; ", j["hallmarks"] ?? new JArray()),
+                    j["preferred_tone"]?.ToString() ?? "Neutral",
+                    j["formatting_rules"]?["forbidden_elements"]?.ToString() ?? "",
+                    Path.GetFileNameWithoutExtension(presetFile));
+            }
+            catch (Exception)
+            {
+                // any IO or JSON issue → fall back to neutral
+                return Neutral();
+            }
         }
+
+        private static DraftStyleOptions Neutral() =>
+            new("Neutral", 0.45, 15, "", "Neutral", "", "Unknown");
     }
 }

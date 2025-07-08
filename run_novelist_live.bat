@@ -11,6 +11,11 @@ set OUTDIR=outlines
 set DRAFTDIR=drafts
 set MODEL=gpt-4o
 
+REM -------- feature toggles --------------------------------------------------
+REM Change to true if your project.json sets includePrologue / includeEpilogue.
+set INCLUDE_PROLOGUE=false
+set INCLUDE_EPILOGUE=false
+
 REM -------- ensure output directory exists -----------------------------------
 if not exist "%OUTDIR%" mkdir "%OUTDIR%"
 
@@ -82,6 +87,24 @@ echo --------------------------------------------------------------------------
 if not exist "%DRAFTDIR%" mkdir "%DRAFTDIR%"
 dotnet run --project "%CLI%" -- outline draft --outline "%OUTLINE%" --output "%DRAFTDIR%" --chapters 1-1 --model %MODEL% --live -s
 if errorlevel 1 goto :error
+
+REM -------- STEP 8a: Build prologue (optional) -------------------------------
+if /I "%INCLUDE_PROLOGUE%"=="true" (
+    echo ----------------------------------------------------------------------
+    echo STEP 8a: Build Prologue
+    echo ----------------------------------------------------------------------
+    dotnet run --project "%CLI%" -- outline draft-prologue --outline "%OUTLINE%" --output "%DRAFTDIR%" --model %MODEL% --live -s
+    if errorlevel 1 goto :error
+)
+
+REM -------- STEP 8b: Build epilogue (optional) -------------------------------
+if /I "%INCLUDE_EPILOGUE%"=="true" (
+    echo ----------------------------------------------------------------------
+    echo STEP 8b: Build Epilogue
+    echo ----------------------------------------------------------------------
+    dotnet run --project "%CLI%" -- outline draft-epilogue --outline "%OUTLINE%" --output "%DRAFTDIR%" --model %MODEL% --live -s
+    if errorlevel 1 goto :error
+)
 
 echo.
 echo All steps completed successfully.

@@ -1,0 +1,38 @@
+{
+  "header": {
+    "schemaVersion": 3,
+    "dateCreated": "2025-07-08T06:48:41.5173045Z",
+    "projectFile": "..\\src\\samples\\thedoor.project.json"
+  },
+  "outlineProgress": "ArcDefined",
+  "premise": "A quiet, unremarkable apartment building for seniors hires a carpenter to renovate a vacant unit.\nThe job seems simple, but the residents are anything but ordinary—especially one who claims he's \"been here forever.\" After weeks on the job, the carpenter discovers an old, warped wooden door in a hallway under renovation. He’s certain it wasn’t there before. When others brush it off, he investigates on his own. Inside, he finds something impossible: the door leads to moments from his past. At first, he’s enchanted by the chance to revisit old memories.\nBut when darker chapters emerge, he’s forced to confront painful truths he’d buried. Then the door vanishes. Locked out, he’s left changed—and unknowingly replaced. A new carpenter arrives to take on the same job. In the building now lives a mysterious new resident: an old man with his name.\nThe cycle quietly resets.",
+  "totalWordCount": 60000,
+  "chapterCount": 20,
+  "premiseExpanded": "The quiet, unremarkable apartment building for seniors becomes a labyrinth of mystery when a carpenter is hired to renovate a vacant unit. His task seems straightforward, but the eccentric residents, particularly one cryptic figure claiming eternal residence, suggest otherwise. As weeks pass, the carpenter stumbles upon an old, warped wooden door in a hallway under renovation, certain it materialized overnight. Curiosity piqued, he finds the door leading to pivotal moments from his past. Enchanted, he delves into cherished memories, but the door soon reveals darker chapters he had long suppressed, forcing him to confront painful truths and unresolved guilt. As he grapples with these revelations, the door disappears, leaving him trapped in a present altered by his past. Unbeknownst to him, the building has exacted its toll: he has been subtly erased from his own life. A new carpenter arrives, assuming his role, while an enigmatic new resident—an elderly man bearing his name and visage—takes up residence. The building stands silent, its secrets intact, as it draws another soul into its timeless cycle of reflection and renewal. The stakes are set in this perpetual loop of identity and redemption, with each carpenter's journey echoing the haunting question: can one truly change the past, or merely become its prisoner?",
+  "storyArc": [
+    {
+      "act": "Act 1",
+      "definition": "Ian Holloway, a skilled but unassuming carpenter, was hired to renovate a vacant unit in a senior apartment building. It was a job like any other, or so he thought. The building was nothing remarkable, and its residents seemed ordinary at first glance. Yet, one resident, Mr. Porter, a peculiar old man with an ageless aura, often remarked, \"I've been here forever.\" Ian dismissed it as the ramblings of an elderly man, focusing instead on his work. As weeks passed, the residents revealed themselves to be a curious mix of personalities, each with a story that hinted at hidden depths, but Ian's attention was drawn elsewhere when he discovered an old, warped wooden door in a hallway under renovation. It was odd; he was sure it hadn't been there before. Mentioning it to others elicited only shrugs, as if the door was an ordinary part of the building. Intrigued, Ian decided to investigate further.",
+      "beats": [],
+      "sub_plots": []
+    },
+    {
+      "act": "Act 2",
+      "definition": "One evening, when the building was silent save for the creaks and groans of its structure settling in the night, Ian turned the knob of the mysterious door. It opened with a soft sigh, revealing not another room, but a passageway to moments from his past. He stepped inside, awestruck, as scenes from his childhood, his teenage years, and early adulthood unfolded around him. It was like walking through a living scrapbook, and he was captivated by the vibrant echoes of his life. The door became a sanctuary where he could bask in nostalgia, reliving cherished memories long forgotten. Each visit filled him with a warmth that the present could not offer. Here was a chance to reclaim those lost moments, to touch the intangible—time itself.",
+      "beats": [],
+      "sub_plots": []
+    },
+    {
+      "act": "Act 3",
+      "definition": "But the door held more than just the golden hues of memory. Shadows began to creep in, revealing chapters of his life he had long buried. He was forced to confront the darker episodes he had carefully avoided: the arguments, the failures, the losses that had shaped him as much as the joyous times. These memories were stark and unrelenting, showing him the parts of himself he had been unwilling to face. The door, once a refuge, became a mirror reflecting truths he had hidden from. It was painful, but inescapable. Ian realized that to be whole, he had to acknowledge all aspects of his past, not just the fragments that painted him in a favorable light. Yet, just as he resolved to embrace this newfound understanding, the door vanished.",
+      "beats": [],
+      "sub_plots": []
+    },
+    {
+      "act": "Act 4",
+      "definition": "Ian was left standing in an ordinary hallway, the door gone as if it had never existed. Confused and disoriented, he realized he was changed, the echoes of his past now an integral part of him. Life in the apartment building continued, unchanged and oblivious to his journey. A new carpenter soon arrived to take on the same renovation task. Among the residents, there was a new face: an old man who carried Ian's name, his eyes reflecting a depth of experience that belied the quiet life he now led. The cycle began anew, unnoticed by all but the building itself—a silent witness to the passage of time, the intertwining of lives, and the perpetual reset of fate's mysterious design.",
+      "beats": [],
+      "sub_plots": []
+    }
+  ]
+}

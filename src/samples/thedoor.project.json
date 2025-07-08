@@ -15,7 +15,7 @@
   "includePrologue": true,
   "includeEpilogue": true,
   "famousAuthorPreset": "StephenKing.json",
-  "gptModel": "gpt-4o-mini",
+  "gptModel": "gpt-4o",
   "targetAudience": [
     "Adults (Ages 19-64)"
   ],

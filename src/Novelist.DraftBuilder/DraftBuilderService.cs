@@ -12,12 +12,21 @@ namespace Novelist.DraftBuilder
     public sealed class DraftBuilderService : IDraftBuilder
     {
         private readonly ILlmClient _llm;
-        private static readonly Regex HeadingRx = new(@"^chapter\s+\d+\b.*",
-                                                      RegexOptions.IgnoreCase);
-        private const int TokenWindow = 1600;  // ~ 1,600 tokens ≈ 1,200 words
+
+        private const int PieceSizeWords  = 350;
+        private const int TokenWindow     = 1600;
+        private const int MaxPieceRetries = 5;
+
+        private static readonly Regex EndsCleanRx =
+            new(@"[.!?][""»”)]?\s*$", RegexOptions.Multiline);
+
+        private static readonly Regex TagRx =
+            new(@"^---\s*piece\s+(\d+)\/(\d+)\s*---",
+                 RegexOptions.IgnoreCase);
 
         public DraftBuilderService(ILlmClient llm) => _llm = llm;
 
+        // ---------------------------------------------------------------------
         public async Task BuildDraftAsync(
             string  outlinePath,
             string  outputDir,
@@ -28,103 +37,116 @@ namespace Novelist.DraftBuilder
         {
             var outline = JObject.Parse(File.ReadAllText(outlinePath));
             if (!Enum.TryParse(outline["outlineProgress"]?.ToString(),
-                               out OutlineProgress phase) ||
-                phase != OutlineProgress.StructureOutlined)
+                               out OutlineProgress p) ||
+                p != OutlineProgress.StructureOutlined)
                 throw new InvalidOperationException("Outline must be StructureOutlined.");
 
             Directory.CreateDirectory(outputDir);
+            CostLogger.Init(Path.Combine(outputDir, "cost_log.csv"));
 
             int totalWords   = outline["totalWordCount"]!.Value<int>();
             int chapterCount = outline["chapterCount"]!.Value<int>();
-            int targetPer    = WordBudgetAllocator.InitialTarget(totalWords, chapterCount);
+            int targetPer    = (int)Math.Round(totalWords / (double)chapterCount,
+                                               MidpointRounding.AwayFromZero);
 
-            // ---- style ------------------------------------------------------
-            var presetDir  = Path.Combine(Environment.CurrentDirectory, "author_presets");
-            var presetFile = outline["famousAuthorPreset"]?.ToString();
-            var style = !string.IsNullOrWhiteSpace(presetFile)
-                      ? FamousAuthorPresetLoader.Load(presetDir, presetFile)
-                      : new DraftStyleOptions("Neutral", 0.45, 14, "", "Neutral", "", "");
+            var style = FamousAuthorPresetLoader.Load(
+                Path.Combine(Environment.CurrentDirectory, "author_presets"),
+                outline["famousAuthorPreset"]?.ToString() ?? "");
 
-            string running = "None yet.";
+            string runningSummary = "None yet.";
 
             for (int ch = startChapter; ch <= Math.Min(chapterCount, endChapter); ch++)
             {
-                int actIdx = GetActIndex(outline, ch);
-                string draftSoFar = string.Empty;
+                int actIdx     = GetActIndex(outline, ch);
+                int pieceCount = (int)Math.Ceiling(targetPer / (double)PieceSizeWords);
 
-                for (int pass = 0; pass < 4; pass++)
+                int remainingBeats = outline["chapters"]![ch - 1]!["beats"]!.Count();
+                int remainingPlots = outline["chapters"]![ch - 1]!["sub_plots"]!.Count();
+
+                string drafted     = string.Empty;
+                string lastAttempt = string.Empty;
+
+                for (int pIdx = 1; pIdx <= pieceCount; pIdx++)
                 {
-                    int remainingWords = targetPer - WordCount(draftSoFar);
-                    if (remainingWords <= targetPer * 0.05) break; // within ±5%
-
-                    int passTarget = pass == 0
-                                   ? (int)Math.Ceiling(targetPer * 0.6)
-                                   : remainingWords;
-
-                    string ctx = ChapterContextBuilder.Build(outline, ch, running, style, actIdx);
-
-                    string continuation = pass == 0
-                        ? string.Empty
-                        : TrimTokens(draftSoFar, TokenWindow);
-
-                    string prompt =
-$@"You are {style.AuthorName}.
-
-Write ~{passTarget} new words for Chapter {ch}.
-Begin with ""Chapter {ch}"" heading **only if** this is the first text; do not
-repeat the heading in continuations.
-
-Requirements:
-- Integrate any remaining beats/subplot lines not yet covered.
-- Do NOT repeat sentences already written.
-- End on a complete sentence.
-
-CONTEXT
-{ctx}
-
-ALREADY WRITTEN
-{(string.IsNullOrWhiteSpace(continuation) ? "(none)" : continuation)}";
-
-                    string reply = Sanitize(await _llm.CompleteAsync(prompt, modelId, ct));
-                    reply = pass == 0 ? EnsureSingleHeading(reply, ch)
-                                      : RemoveHeading(reply, ch);
-
-                    if (IsDuplicate(reply, draftSoFar))
+                    int retries = 0;
+                    while (retries < MaxPieceRetries)
                     {
-                        // retry once with stricter instruction
-                        prompt += "\n\nWARNING: Your previous attempt repeated text.";
-                        reply = Sanitize(await _llm.CompleteAsync(prompt, modelId, ct));
-                        reply = RemoveHeading(reply, ch);
-                    }
+                        string prev   = TrimToLastTokens(drafted, TokenWindow);
+                        string prompt = BuildPiecePrompt(
+                                outline, ch, pIdx, pieceCount,
+                                remainingBeats, remainingPlots,
+                                runningSummary, style, actIdx, prev, retries);
 
-                    draftSoFar = string.IsNullOrWhiteSpace(draftSoFar)
-                               ? reply.Trim()
-                               : $"{draftSoFar.Trim()}\n\n{reply.Trim()}";
+                        string reply = await _llm.CompleteAsync(prompt, modelId, ct);
+                        int tPrompt  = EstimateTokens(prompt);
+                        int tReply   = EstimateTokens(reply);
+                        CostLogger.Record(modelId, tPrompt, tReply);
+
+                        lastAttempt = reply;
+                        string piece = Sanitize(reply);
+
+                        // Tag validation / correction --------------------------
+                        if (!TagRx.IsMatch(piece))
+                        {
+                            retries++; continue;
+                        }
+                        var m = TagRx.Match(piece);
+                        int tagIdx = int.Parse(m.Groups[1].Value);
+                        int tagMax = int.Parse(m.Groups[2].Value);
+
+                        if (tagIdx != pIdx || tagMax != pieceCount)
+                        {
+                            if (retries < 3)
+                            { retries++; continue; }         // ask again
+                            // after 3 tries, rewrite tag so piece is usable
+                            piece = TagRx.Replace(piece,
+                                     $"--- piece {pIdx}/{pieceCount} ---", 1);
+                        }
+
+                        // length / clean / duplicate --------------------------
+                        int words = WordCount(piece);
+                        if (words < PieceSizeWords - 100 ||
+                            words > PieceSizeWords + 150)
+                        { retries++; continue; }
+
+                        if (!EndsCleanRx.IsMatch(piece))
+                        { retries++; continue; }
+
+                        if (DuplicateDetector.AreSimilar(piece, drafted))
+                        { retries++; continue; }
+
+                        drafted = drafted.Length == 0
+                                ? piece.Trim()
+                                : $"{drafted.Trim()}\n\n{piece.Trim()}";
+                        break;
+                    }
                 }
 
-                // ensure exactly one heading
-                draftSoFar = EnsureSingleHeading(draftSoFar, ch);
+                // fallback if all pieces rejected
+                if (drafted.Length == 0 && lastAttempt.Length > 0)
+                {
+                    drafted = Sanitize(lastAttempt).Trim();
+                    Console.WriteLine(
+                        $"WARNING: accepted fallback draft for chapter {ch}.");
+                }
 
-                // ---------- save ---------------------------------------------
                 string fileName = Path.Combine(outputDir, $"chapter_{ch:D2}.md");
-                await File.WriteAllTextAsync(fileName, draftSoFar, ct);
-                Console.WriteLine($"Draft written: {fileName} ({WordCount(draftSoFar)} words)");
+                await File.WriteAllTextAsync(fileName, drafted, ct);
+                Console.WriteLine($"Draft written: {fileName} ({WordCount(drafted)} words)");
 
-                running = RunningSummaryHelper.Update(running, draftSoFar);
-
-                int remaining = totalWords - (targetPer * ch);
-                targetPer = WordBudgetAllocator.Reallocate(remaining, chapterCount - ch);
+                runningSummary = RunningSummaryHelper.Update(runningSummary, drafted);
             }
         }
 
         // ---------------------------------------------------------------------
-        //  Helpers
-        // ---------------------------------------------------------------------
+        private static int EstimateTokens(string text)
+            => (int)Math.Round(WordCount(text) * 4 / 3.0);
+
         private static int WordCount(string s)
             => s.Split(new[] { ' ', '\n', '\r', '\t' },
                        StringSplitOptions.RemoveEmptyEntries).Length;
 
-        private static string TrimTokens(string text, int maxWords)
+        private static string TrimToLastTokens(string text, int maxWords)
         {
             var words = text.Split(new[] { ' ', '\n', '\r', '\t' },
                                    StringSplitOptions.RemoveEmptyEntries);
@@ -132,58 +154,63 @@ ALREADY WRITTEN
             return string.Join(' ', words[^maxWords..]);
         }
 
-        private static bool IsDuplicate(string segment, string existing)
+        private static string BuildPiecePrompt(
+            JObject outline, int chapterNum, int pieceIdx, int pieceCount,
+            int remainingBeats, int remainingPlots,
+            string running, DraftStyleOptions style, int actIdx,
+            string prevText, int retryCount)
         {
-            var tail = TrimTokens(existing, 30);
-            return segment.StartsWith(tail, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string EnsureSingleHeading(string text, int chapterNum)
-        {
-            var lines = text.Split('\n').ToList();
-            // remove all headings except first
-            for (int i = lines.Count - 1; i > 0; i--)
+            string retryMsg = retryCount switch
             {
-                if (HeadingRx.IsMatch(lines[i]))
-                    lines.RemoveAt(i);
-            }
-            // if first line isn’t heading, prepend one
-            if (!HeadingRx.IsMatch(lines[0]))
-                lines.Insert(0, $"Chapter {chapterNum}");
-            return string.Join('\n', lines).Trim();
+                0 => "",
+                1 => "The tag was wrong. Use the exact tag shown.",
+                2 => "Do not skip ahead. Write piece " + pieceIdx + " only.",
+                _ => "Final attempt. Any length ≥ 150 words accepted."
+            };
+
+            return
+$@"You are {style.AuthorName}.
+
+Write ONLY piece {pieceIdx}/{pieceCount} of Chapter {chapterNum}.
+Start with:
+--- piece {pieceIdx}/{pieceCount} ---
+
+Target about {PieceSizeWords} words.
+Remaining beats   : {remainingBeats}
+Remaining subplots: {remainingPlots}
+{retryMsg}
+
+RUNNING SUMMARY
+{running}
+
+PREVIOUS TEXT
+{(string.IsNullOrWhiteSpace(prevText) ? "(none)" : prevText)}
+
+--- piece {pieceIdx}/{pieceCount} ---";
         }
 
-        private static string RemoveHeading(string text, int chapterNum)
+        private static string Sanitize(string t)
         {
-            var lines = text.Split('\n').ToList();
-            if (lines.Count == 0) return text;
-            if (HeadingRx.IsMatch(lines[0]))
-                lines.RemoveAt(0);
-            return string.Join('\n', lines).TrimStart();
-        }
-
-        private static string Sanitize(string text)
-        {
-            var t = text.Trim();
-            if (t.StartsWith("```"))
+            var s = t.Trim();
+            if (s.StartsWith("```"))
             {
-                int first = t.IndexOf('\n');
-                int last  = t.LastIndexOf("```", StringComparison.Ordinal);
-                if (first >= 0 && last > first)
-                    return t.Substring(first + 1, last - first - 1).Trim();
+                int i = s.IndexOf('\n');
+                int j = s.LastIndexOf("```", StringComparison.Ordinal);
+                if (i >= 0 && j > i)
+                    s = s.Substring(i + 1, j - i - 1).Trim();
             }
-            return t;
+            return s;
         }
 
         private static int GetActIndex(JObject outline, int chapterNumber)
         {
-            int chaptersSeen = 0;
+            int seen = 0;
             for (int i = 0; i < outline["storyArc"]!.Count(); i++)
             {
                 int actChaps = outline["chapters"]!
-                               .Count(c => (int)c["number"]! > chaptersSeen);
-                chaptersSeen += actChaps;
-                if (chapterNumber <= chaptersSeen) return i;
+                               .Count(c => (int)c["number"]! > seen);
+                seen += actChaps;
+                if (chapterNumber <= seen) return i;
             }
             return 0;
         }

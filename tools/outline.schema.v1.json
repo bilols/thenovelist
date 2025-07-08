@@ -18,8 +18,8 @@
       "required": [ "number", "summary", "beats" ],
       "additionalProperties": false,
       "properties": {
-        "number": { "type": "integer", "minimum": 1 },
-        "summary": { "type": "string", "minLength": 1 },
+        "number":   { "type": "integer", "minimum": 1 },
+        "summary":  { "type": "string",  "minLength": 1 },
         "beats": {
           "type": "array",
           "minItems": 1,
@@ -32,6 +32,26 @@
         },
         "sub_plots": {
           "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "simpleChapter": {
+      "type": "object",
+      "required": [ "number", "summary", "beats" ],
+      "additionalProperties": false,
+      "properties": {
+        "number":   { "type": "integer", "minimum": 0 },
+        "summary":  { "type": "string",  "minLength": 1 },
+        "beats": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "themes": {
+          "type": "array",
+          "minItems": 1,
           "items": { "type": "string", "minLength": 1 }
         }
       }
@@ -80,8 +100,8 @@
       ]
     },
 
-    "premise":          { "type": "string", "minLength": 1 },
-    "premiseExpanded":  { "type": "string" },
+    "premise":         { "type": "string", "minLength": 1 },
+    "premiseExpanded": { "type": "string" },
 
     "storyArc": {
       "type": "array",
@@ -94,9 +114,19 @@
     "totalWordCount": { "type": "integer", "minimum": 1000 },
     "chapterCount":   { "type": "integer", "minimum": 1 },
 
+    "prologue": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/simpleChapter" }
+    },
+
     "chapters": {
       "type": "array",
       "items": { "$ref": "#/definitions/chapter" }
+    },
+
+    "epilogue": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/simpleChapter" }
     }
   }
 }
