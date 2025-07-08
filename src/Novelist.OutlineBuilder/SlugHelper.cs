@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace Novelist.OutlineBuilder;
 
 /// <summary>
-/// Utility to create URL‑ and file‑safe slugs from arbitrary text.
+/// Utility to create URL- and file-safe slugs from arbitrary text.
 /// </summary>
 public static class SlugHelper
 {

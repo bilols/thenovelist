@@ -8,6 +8,7 @@ REM -------- variables --------------------------------------------------------
 set CLI=src\Novelist.Cli
 set PROJECT_JSON=src\samples\thedoor.project.json
 set OUTDIR=outlines
+set DRAFTDIR=drafts
 set MODEL=gpt-4o
 
 REM -------- ensure output directory exists -----------------------------------
@@ -53,7 +54,7 @@ echo --------------------------------------------------------------------------
 dotnet run --project "%CLI%" -- outline define-characters --outline "%OUTLINE%" --model %MODEL% --live -s
 if errorlevel 1 goto :error
 
-REM -------- STEP 5: Define sub‑plots ----------------------------------------
+REM -------- STEP 5: Define sub-plots ----------------------------------------
 echo --------------------------------------------------------------------------
 echo STEP 5: Define sub-plots
 echo --------------------------------------------------------------------------
@@ -74,9 +75,18 @@ echo --------------------------------------------------------------------------
 dotnet run --project "%CLI%" -- outline define-structure --outline "%OUTLINE%" --model %MODEL% --live -s
 if errorlevel 1 goto :error
 
+REM -------- STEP 8: Build first-chapter draft --------------------------------
+echo --------------------------------------------------------------------------
+echo STEP 8: Build Chapter 1 draft
+echo --------------------------------------------------------------------------
+if not exist "%DRAFTDIR%" mkdir "%DRAFTDIR%"
+dotnet run --project "%CLI%" -- outline draft --outline "%OUTLINE%" --output "%DRAFTDIR%" --chapters 1-1 --model %MODEL% --live -s
+if errorlevel 1 goto :error
+
 echo.
 echo All steps completed successfully.
 echo Final outline: %OUTLINE%
+echo Drafts located in: %DRAFTDIR%
 goto :eof
 
 :error

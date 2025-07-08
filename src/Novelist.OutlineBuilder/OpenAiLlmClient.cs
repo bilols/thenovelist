@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Minimal wrapper around the OpenAI REST chat‑completion endpoint.
+    /// Minimal wrapper around the OpenAI REST chat-completion endpoint.
     /// Streaming is not yet implemented.
     /// </summary>
     public sealed class OpenAiLlmClient : ILlmClient, IDisposable

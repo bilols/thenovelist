@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Expands each act into a fixed‑length list of beats, then advances the outline
+    /// Expands each act into a fixed-length list of beats, then advances the outline
     /// to <see cref="OutlineProgress.BeatsExpanded" />.
     /// </summary>
     public sealed class BeatsExpanderService
@@ -77,7 +77,7 @@ namespace Novelist.OutlineBuilder
                                   .ToArray();
 
                 string plotsLine = subPlots.Length > 0
-                                 ? $"Sub‑plots in this act: {string.Join("; ", subPlots)}."
+                                 ? $"Sub-plots in this act: {string.Join("; ", subPlots)}."
                                  : string.Empty;
 
                 string prompt =

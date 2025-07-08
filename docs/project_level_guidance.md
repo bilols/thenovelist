@@ -3,11 +3,11 @@
 1. **Always consult the latest `requirements_digest.md` (or version of the file that seems to be newer based on naming scheme).**  
    Never contradict or omit a requirement.
 
-2. **Full‑file delivery only.**  
-   When supplying source, return complete, self‑contained files ready for copy‑replace—no snippets or inline patches.
+2. **Full-file delivery only.**  
+   When supplying source, return complete, self-contained files ready for copy-replace—no snippets or inline patches.
 
 3. **Touch only the files directly related to the explicitly requested feature or fix.**  
-   Unrelated code must remain byte‑for‑byte identical.
+   Unrelated code must remain byte-for-byte identical.
 
 4. **State “Digest reviewed” at the top of every technical reply** to confirm you reread the digest.
 

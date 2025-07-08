@@ -3,22 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- User‑secrets GUID (regenerate with 'dotnet user-secrets init' if desired) -->
+    <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>d1a9e54d-e23b-4d9f-9027-313b2e0e9e71</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <!-- Existing package references -->
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+    <PackageReference Include="Spectre.Console" Version="0.49.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Existing project reference -->
     <ProjectReference Include="..\Novelist.OutlineBuilder\Novelist.OutlineBuilder.csproj" />
+    <!-- NEW: DraftBuilder dependency -->
+    <ProjectReference Include="..\Novelist.DraftBuilder\Novelist.DraftBuilder.csproj" />
   </ItemGroup>
 
 </Project>

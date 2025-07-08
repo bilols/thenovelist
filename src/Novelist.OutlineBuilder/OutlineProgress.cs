@@ -1,7 +1,7 @@
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Ordered list of pipeline phases in the outline‑builder pipeline.
+    /// Ordered list of pipeline phases in the outline-builder pipeline.
     /// </summary>
     public enum OutlineProgress
     {

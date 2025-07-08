@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates chapter‑level structure (summary + beats + sub_plots)
+    /// Generates chapter-level structure (summary + beats + sub_plots)
     /// and advances the outline to StructureOutlined.
     /// </summary>
     public sealed class StructureOutlinerService
@@ -67,7 +67,7 @@ namespace Novelist.OutlineBuilder
                                                          audArr.Select(a => a.ToString()))}."
                        : string.Empty;
 
-            // ---------- build ACT / BEAT / SUB‑PLOT grid ---------------------
+            // ---------- build ACT / BEAT / SUB-PLOT grid ---------------------
             var actsBlock = string.Join("\n\n",
                 outline["storyArc"]!.Select((a,idx) =>
                 {
@@ -84,7 +84,7 @@ $@"You are a seasoned development editor.
 The novel has {chapters} chapters across {acts} acts.
 For each chapter, create:
 
-  ""number""   : 1‑based integer
+  ""number""   : 1-based integer
   ""summary""  : 1–2 sentences
   ""beats""    : exactly 3 strings drawn from the act's beat list
   ""sub_plots"": 1–{depth} strings, each beginning with its ID (S1:, S2:, …)

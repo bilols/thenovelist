@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Expands the original premise into a concise, plot‑oriented paragraph
+    /// Expands the original premise into a concise, plot-oriented paragraph
     /// while leaving the original premise unchanged.
     /// Writes the result to <c>premiseExpanded</c> and advances the phase.
     /// </summary>

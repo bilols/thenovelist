@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates a multi‑act story arc (3 – 5 acts per chapter‑count rule)
+    /// Generates a multi-act story arc (3 – 5 acts per chapter-count rule)
     /// and advances the outline to ArcDefined.
     /// </summary>
     public sealed class ArcDefinerService
@@ -51,7 +51,7 @@ namespace Novelist.OutlineBuilder
                        : string.Empty;
 
             var prompt =
-$@"You are a narrative‑structure expert.
+$@"You are a narrative-structure expert.
 
 Create exactly {acts} ACT paragraphs (one blank line between each).
 No headings, no markdown.

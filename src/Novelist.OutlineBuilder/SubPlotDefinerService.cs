@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Generates evolving sub‑plots for every act and prefixes each line with
+    /// Generates evolving sub-plots for every act and prefixes each line with
     /// S1:, S2:, … so threads can be traced in later stages.
     /// </summary>
     public sealed class SubPlotDefinerService
@@ -153,7 +153,7 @@ Main story arc:
 
             if (result is null)
                 throw new InvalidOperationException(
-                    "LLM failed to produce valid sub‑plots.", last);
+                    "LLM failed to produce valid sub-plots.", last);
 
             // --------------- inject into outline -----------------------------
             for (int i = 0; i < acts; i++)

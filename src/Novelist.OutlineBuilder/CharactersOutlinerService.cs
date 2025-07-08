@@ -137,7 +137,7 @@ namespace Novelist.OutlineBuilder
                 : string.Empty;
 
             return
-$@"You are an elite character‑development assistant.
+$@"You are an elite character-development assistant.
 
 Create exactly {total} characters for the premise below:
 
@@ -150,7 +150,7 @@ Each object MUST contain:
   ""role""  : starts with one of exactly
              ""Protagonist: "", ""Supporting character: "", ""Minor character: ""
   ""traits"": 1–5 short descriptors
-  ""arc""   : ≤100‑word personal journey
+  ""arc""   : ≤100-word personal journey
 
 Return ONLY the raw JSON array. Do NOT wrap in Markdown.  
 If you cannot comply, reply only with the word: RETRY.

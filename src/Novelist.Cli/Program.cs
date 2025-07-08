@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Novelist.OutlineBuilder;
+using Novelist.DraftBuilder;
 using Spectre.Console;
 
 namespace Novelist.Cli
@@ -21,35 +22,36 @@ namespace Novelist.Cli
             bool authorPreset = false;
             bool includeAud   = true;
 
+            // ---------------- copy args into mutable list --------------------
             var list = new System.Collections.Generic.List<string>(args);
 
-            // ------------------------------------------------ global flags -----
-            for (int i = list.Count - 1; i >= 0; i--)
+            // ---------------- strip global flags safely ----------------------
+            for (int i = 0; i < list.Count; i++)
             {
                 switch (list[i])
                 {
                     case "--live":
                     case "-l":
                         live = true;
-                        list.RemoveAt(i);
+                        list.RemoveAt(i--);
                         break;
 
                     case "--snapshot":
                     case "-s":
                         _snapshot = true;
-                        list.RemoveAt(i);
+                        list.RemoveAt(i--);
                         break;
 
                     case "--author-preset":
                     case "-p":
                         authorPreset = true;
-                        list.RemoveAt(i);
+                        list.RemoveAt(i--);
                         break;
 
                     case "--no-audience":
                     case "-na":
                         includeAud = false;
-                        list.RemoveAt(i);
+                        list.RemoveAt(i--);
                         break;
                 }
             }
@@ -58,7 +60,6 @@ namespace Novelist.Cli
 
             ILlmClient? tmp = live ? CreateLiveClient(config)
                                    : new Stub();
-
             if (tmp is null)
                 return 1;
 
@@ -76,21 +77,21 @@ namespace Novelist.Cli
                 ("outline", "define-subplots")       => RunSubPlots(args[2..], client, includeAud),
                 ("outline", "expand-beats")          => RunBeats(args[2..], client, includeAud),
                 ("outline", "define-structure")      => RunStruct(args[2..], client, includeAud),
+                ("outline", "draft")                 => RunDraft(args[2..], client),
                 ("outline", "mark-premise-expanded") => RunMark(args[2..]),
                 _                                    => Help()
             };
         }
 
         // ---------------------------------------------------------------------
-        //  Live client
+        //  Live-client helper
         // ---------------------------------------------------------------------
-
         private static ILlmClient? CreateLiveClient(IConfiguration cfg)
         {
             var key = cfg["OpenAI:Key"];
             if (string.IsNullOrWhiteSpace(key))
             {
-                AnsiConsole.MarkupLine("[red]ERROR: OpenAI key not set.[/]");
+                AnsiConsole.WriteLine("ERROR: OpenAI key not set.");
                 return null;
             }
 
@@ -100,19 +101,17 @@ namespace Novelist.Cli
             if (!string.IsNullOrWhiteSpace(baseUrl))
                 Environment.SetEnvironmentVariable("OPENAI_BASE", baseUrl);
 
-            AnsiConsole.MarkupLine("[green]Using live OpenAI client.[/]");
+            AnsiConsole.WriteLine("Using live OpenAI client.");
             return new OpenAiLlmClient();
         }
 
         // ---------------------------------------------------------------------
-        //  Command runners
+        //  Individual command runners
         // ---------------------------------------------------------------------
-
         private static int RunCreate(string[] a)
         {
             if (!Try(a, "--project", out var proj))
                 return Err("--project required");
-
             Try(a, "--output", out var outDir);
 
             var schemaDir = Path.Combine(Environment.CurrentDirectory, "tools");
@@ -125,7 +124,6 @@ namespace Novelist.Cli
             return Ok($"Outline created: {path}");
         }
 
-        // ---------- updated -----------------------------------------------
         private static int RunExpand(string[] a, ILlmClient llm, bool aud)
         {
             if (!Try(a, "--outline", out var o))
@@ -133,12 +131,11 @@ namespace Novelist.Cli
 
             var model = Get(a, "--model", "gpt-4o-mini");
 
-            int maxWords = 250; // default
+            int maxWords = 250;
             if (Try(a, "--premise-words", out var wStr))
             {
-                if (!int.TryParse(wStr, out maxWords) ||
-                    maxWords < 150 || maxWords > 350)
-                    return Err("--premise-words must be an integer 150-350");
+                if (!int.TryParse(wStr, out maxWords) || maxWords is < 150 or > 350)
+                    return Err("--premise-words must be 150-350");
             }
 
             new PremiseExpanderService(llm, aud)
@@ -147,13 +144,11 @@ namespace Novelist.Cli
             SaveSnapshot(o);
             return Ok("Premise expanded.");
         }
-        // ------------------------------------------------------------------
 
         private static int RunArc(string[] a, ILlmClient llm, bool aud)
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
-
             var model = Get(a, "--model", "gpt-4o-mini");
 
             new ArcDefinerService(llm, aud)
@@ -163,15 +158,10 @@ namespace Novelist.Cli
             return Ok("Story arc defined.");
         }
 
-        private static int RunChars(
-            string[]   a,
-            ILlmClient llm,
-            bool       preset,
-            bool       aud)
+        private static int RunChars(string[] a, ILlmClient llm, bool preset, bool aud)
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
-
             var model = Get(a, "--model", "gpt-4o-mini");
 
             new CharactersOutlinerService(llm, preset)
@@ -185,7 +175,6 @@ namespace Novelist.Cli
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
-
             var model = Get(a, "--model", "gpt-4o-mini");
 
             new SubPlotDefinerService(llm, aud)
@@ -199,7 +188,6 @@ namespace Novelist.Cli
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
-
             var model = Get(a, "--model", "gpt-4o-mini");
 
             new BeatsExpanderService(llm, aud)
@@ -213,7 +201,6 @@ namespace Novelist.Cli
         {
             if (!Try(a, "--outline", out var o))
                 return Err("--outline required");
-
             var model = Get(a, "--model", "gpt-4o-mini");
 
             new StructureOutlinerService(llm, aud)
@@ -221,6 +208,34 @@ namespace Novelist.Cli
 
             SaveSnapshot(o);
             return Ok("Structure outlined.");
+        }
+
+        private static int RunDraft(string[] a, ILlmClient llm)
+        {
+            if (!Try(a, "--outline", out var o))
+                return Err("--outline required");
+            if (!Try(a, "--output", out var outDir))
+                return Err("--output required");
+
+            var model = Get(a, "--model", "gpt-4o-mini");
+
+            int start = 1, end = int.MaxValue;
+            if (Try(a, "--chapters", out var r))
+            {
+                var parts = r.Split('-', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2 &&
+                    int.TryParse(parts[0], out start) &&
+                    int.TryParse(parts[1], out end) &&
+                    start > 0 && end >= start)
+                { /* ok */ }
+                else
+                    return Err("--chapters format must be start-end (e.g., 5-12)");
+            }
+
+            new DraftBuilderService(llm)
+               .BuildDraftAsync(o, outDir, model, start, end).Wait();
+
+            return Ok("Draft build completed.");
         }
 
         private static int RunMark(string[] a)
@@ -236,7 +251,6 @@ namespace Novelist.Cli
         // ---------------------------------------------------------------------
         //  Utility helpers
         // ---------------------------------------------------------------------
-
         private static void SaveSnapshot(string path)
         {
             if (!_snapshot)
@@ -252,11 +266,11 @@ namespace Novelist.Cli
                 var dest = Path.Combine(dir, $"{name}_{phase}.json");
 
                 File.Copy(path, dest, true);
-                AnsiConsole.MarkupLine($"[grey]Snapshot saved: {dest}[/]");
+                AnsiConsole.WriteLine($"Snapshot saved: {dest}");
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[yellow]Warning: snapshot failed – {ex.Message}[/]");
+                AnsiConsole.WriteLine($"Warning: snapshot failed – {ex.Message}");
             }
         }
 
@@ -279,35 +293,33 @@ namespace Novelist.Cli
 
         private static int Ok(string m)
         {
-            AnsiConsole.MarkupLine($"[green]{m}[/]");
+            AnsiConsole.WriteLine(m);
             return 0;
         }
 
         private static int Err(string m)
         {
-            AnsiConsole.MarkupLine($"[red]{m}[/]");
+            AnsiConsole.WriteLine($"ERROR: {m}");
             return 1;
         }
 
         private static int Help()
         {
-            AnsiConsole.MarkupLine("[bold]Novelist CLI[/]");
-
-            AnsiConsole.MarkupLine(" outline create --project <file> [--output <dir>] [-s]");
-            AnsiConsole.MarkupLine(" outline expand-premise --outline <file> [--premise-words <150-350>] [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(" outline define-arc --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(" outline define-characters --outline <file> [--model <id>] [-l] [-s] [-p] [-na]");
-            AnsiConsole.MarkupLine(" outline define-subplots --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(" outline expand-beats --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(" outline define-structure --outline <file> [--model <id>] [-l] [-s] [-na]");
-            AnsiConsole.MarkupLine(" outline mark-premise-expanded --outline <file> [-s]");
-            AnsiConsole.MarkupLine("");
-            AnsiConsole.MarkupLine("Flags: -l live | -s snapshot | -p author-preset | -na no-audience");
-
+            AnsiConsole.WriteLine("Novelist CLI");
+            AnsiConsole.WriteLine(" outline create --project <file> [--output <dir>] [-s]");
+            AnsiConsole.WriteLine(" outline expand-premise --outline <file> [--premise-words <150-350>] [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.WriteLine(" outline define-arc --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.WriteLine(" outline define-characters --outline <file> [--model <id>] [-l] [-s] [-p] [-na]");
+            AnsiConsole.WriteLine(" outline define-subplots --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.WriteLine(" outline expand-beats --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.WriteLine(" outline define-structure --outline <file> [--model <id>] [-l] [-s] [-na]");
+            AnsiConsole.WriteLine(" outline draft --outline <file> --output <dir> [--chapters <start-end>] [--model <id>] [-l] [-s]");
+            AnsiConsole.WriteLine(" outline mark-premise-expanded --outline <file> [-s]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("Flags: -l live | -s snapshot | -p author-preset | -na no-audience");
             return 0;
         }
 
-        /// <summary>Offline stub – always returns [].</summary>
         private sealed class Stub : ILlmClient
         {
             public System.Threading.Tasks.Task<string> CompleteAsync(

@@ -13,14 +13,14 @@ These are the technology decisions that have been made so far.
 | Area                   | Decision                                                                                                        |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Runtime / language** | .NET 8 (C# 13)                                                                                                  |
-| **JSON stack**         | **Newtonsoft.Json** for all serialization + schema‑driven work                                                  |
+| **JSON stack**         | **Newtonsoft.Json** for all serialization + schema-driven work                                                  |
 | **Logging**            | **Serilog** (with `ILogger` abstraction for host apps)                                                          |
 | **DI**                 | Microsoft default container                                                                                     |
 | **Schema**             | `outline.schema.v1.json` is canonical; each outline carries an internal `"schemaVersion"` for minor revs        |
-| **Storage**            | Filesystem only – path pattern: `./projects/<slug‑project‑name‑timestamp>/outlines/<slug‑title‑timestamp>.json` |
+| **Storage**            | Filesystem only – path pattern: `./projects/<slug-project-name-timestamp>/outlines/<slug-title-timestamp>.json` |
 | **Namespaces**         | `Novelist` (root), `Novelist.Cli`, `Novelist.OutlineBuilder`, `Novelist.DraftBuilder`                           |
 | **Update semantics**   | Always write a **new version**; never mutate in place                                                           |
 | **Async**              | All public operations are `async`/`CancellationToken` aware                                                     |
-| **Multi‑pass logic**   | Re‑implemented in C#; token math concept retained                                                               |
-| **CLI**                | `novelist outline create …` / `validate …`; smoke‑tested via `dotnet test`                                      |
+| **Multi-pass logic**   | Re-implemented in C#; token math concept retained                                                               |
+| **CLI**                | `novelist outline create …` / `validate …`; smoke-tested via `dotnet test`                                      |
 | **Help / exit codes**  | Follow common .NET CLI conventions for now                                                                      |

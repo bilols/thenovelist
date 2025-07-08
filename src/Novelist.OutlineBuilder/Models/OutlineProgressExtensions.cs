@@ -1,7 +1,7 @@
 namespace Novelist.OutlineBuilder
 {
     /// <summary>
-    /// Convenience helpers for comparing outline‑progress phases.
+    /// Convenience helpers for comparing outline-progress phases.
     /// </summary>
     public static class OutlineProgressExtensions
     {

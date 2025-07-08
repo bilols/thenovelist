@@ -68,7 +68,7 @@ _ReSharper*/
 **/SolutionCaches/
 
 #----------------------------------------------------------------------------
-# Front‑end / Blazor & web assets
+# Front-end / Blazor & web assets
 #----------------------------------------------------------------------------
 node_modules/
 npm-debug.log*
