@@ -38,6 +38,7 @@ dist/
 src/Novelist.OutlineBuilder/outlines/
 src/Novelist.Cli/outlines/
 outlines/
+drafts/
 
 #----------------------------------------------------------------------------
 # Configuration / secrets & environment files
