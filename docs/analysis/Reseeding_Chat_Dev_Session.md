@@ -1,6 +1,7 @@
-## What to include in a Dev‑Session Reseed File
 
-This will need to be updated eventually to have full *accurate* details (it's a little janked). 
+### Do Not Use This File Yet 
+This file will need to be completely updated *accurate* details. This document isn'tcorrect because some of the details of the software were not planned when it was written. Consider this only a place holder
+and a littel bit of a helper to help guide some thought.
 
 | Section                            | Content                                                                                                                                                                           | Why it’s needed                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
