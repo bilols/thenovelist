@@ -1,5 +1,7 @@
 # Novelist Project Recovery & Redesign Plan
 
+**Special Note**: Some of the information in this that refers to refactory .py files (e.g. `prompt_builders.py, __main__.py, summarizer.py, validate_artifacts.py` et al) are incorrect and a misunderstanding by the o3-pro GPT datamodel when it provided the research analysis. This project does not contain ***any*** Python code. The Python code being mentioned was from prior prototype projects and was only supposed  to be used for reference. This document will be corrected.  
+
 This plan addresses the context loss issues identified in the Novelist project audit and proposes a multi-phase redesign. It is organized by major subsystems with specific recommendations for phase ordering, context integration, schema updates, and guardrails to ensure continuity from outline through final draft. Implementation phases and a **reseed payload** strategy for recovering lost context are included at the end.
 
 ## Premise & Project Metadata

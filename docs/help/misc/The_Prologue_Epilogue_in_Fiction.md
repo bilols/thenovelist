@@ -1,4 +1,4 @@
-# The Purpose & Effectiveness of the Prologue & Epilogue in Fiction #
+# The Prologue & Epilogue in Fiction #
 
 ### **Prologue**
 
