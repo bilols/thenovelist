@@ -75,5 +75,3 @@ The primer contains:
 ## License
 
 MIT © 2025 Bill Olson & contributors
-
-```
