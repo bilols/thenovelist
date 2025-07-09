@@ -88,21 +88,6 @@ Implement the above recommendations in phases to manage complexity and ensure st
 
 Each phase builds on the previous, so it’s recommended to merge Phase 1 changes before moving to Phase 2, and so on. This incremental approach will make it easier to isolate issues introduced by each set of changes.
 
-
-## Reseed Payload for Context Recovery
-
-### TODO: Will need to come up with a plan for this
-
-~~To handle situations where the conversation context is lost (e.g. lengthy sessions or switching to a new OpenAI model instance mid-project), it’s crucial to have a **“reseed” payload** that can restore the state. The minimal reseed payload should include the core artifacts of the project in a concise form:~~
-
-~~* **Premise & Settings:** A short paragraph summarizing the premise, genre, and style guidelines. Essentially, remind the model what story it’s writing and in what manner.~~
-~~* **Character Roster:** A bullet list of characters with one-line descriptions each (name and key traits/roles). This serves as a quick reference for the model to recall who's who.~~
-~~* **Outline Summary:** A high-level outline of the story structure. This can be act-wise or chapter-wise, with one sentence per major beat. Focus on the major plot points and any subplots. For example: “Act I: Alice introduced, accepts challenge to save village (Subplot: strained friendship with Bob). Act II: Trials and failures…,” etc. This should fit in a couple of paragraphs if possible.~~
-~~* **Progress Pointer:** If resuming in the middle (say we lost context during drafting chapter 5), include a note of where we are in the narrative and any important recent events. E.g., “Current point: Chapter 5, Alice has just discovered Bob’s betrayal and is about to confront him.” This ensures continuity from the last known event.~~
-~~* **Instructions/Mode Reminder:** Finally, include a line reminding the assistant of its role (if needed): e.g., “You are assisting in drafting a novel. Continue from the provided outline and prior content.” This helps reestablish the format and expectations.~~
-
-~~In practice, this reseed payload can be prepared as a small JSON or markdown file (for instance, `reseed_summary.md`) that the system writes whenever a major phase is completed. If an OpenAI session is interrupted or a new session is started (like using a fresh GPT-4 instance), the developer can copy-paste this payload to quickly bring the AI back up to speed. Essentially, it condenses the project state into a digestible brief for the model. By saving key prompt blocks or the outline JSON at checkpoints, you can regenerate this summary on the fly. The goal is that even without the prior chat history, the model can read this and continue with minimal inconsistencies.~~
-
 ---
 
 By following this recovery and redesign plan, the Novelist project should resolve the drift in character identity, omitted beats, lost subplots, and other context failures. The story generation pipeline will become more robust, with each phase informing the next through explicit, structured context. Moreover, developers and writers using the system will gain confidence that the final draft remains faithful to the outline they crafted, and any hiccups in AI session continuity can be mitigated with the reseed strategy. Each recommendation above is grounded in the lessons from the context loss audit and the design insights from earlier prototypes, ensuring that we build on past knowledge to create a more resilient storytelling engine.
