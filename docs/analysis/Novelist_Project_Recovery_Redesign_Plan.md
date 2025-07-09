@@ -89,7 +89,9 @@ Implement the above recommendations in phases to manage complexity and ensure st
 Each phase builds on the previous, so it’s recommended to merge Phase 1 changes before moving to Phase 2, and so on. This incremental approach will make it easier to isolate issues introduced by each set of changes.
 
 
-~~## Reseed Payload for Context Recovery~~
+## Reseed Payload for Context Recovery
+
+### TODO: Will need to come up with a plan for this
 
 ~~To handle situations where the conversation context is lost (e.g. lengthy sessions or switching to a new OpenAI model instance mid-project), it’s crucial to have a **“reseed” payload** that can restore the state. The minimal reseed payload should include the core artifacts of the project in a concise form:~~
 
