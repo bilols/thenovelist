@@ -1,5 +1,5 @@
 # Novelist – Three‑Phase Technical Change Plan  
-*(excerpted from the full redesign blueprint; dev‑chat reseed guide omitted)*
+*(High Level Summary)*
 
 ---
 
