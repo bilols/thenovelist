@@ -1,6 +1,6 @@
-## Phase 3 – Fidelity Enforcement & Polishing (3 Sprints)
+# Phase 3 – Fidelity Enforcement & Polishing (3 Sprints)
 
-### Sprint 3.1 — Chapter‑Scoped Drafting
+## Sprint 3.1 — Chapter‑Scoped Drafting
 
 * **Refactor `DraftBuilderService`** so `BuildManuscript` iterates chapters; for each:
 
@@ -11,7 +11,7 @@
 
 ---
 
-### Sprint 3.2 — `DraftValidator` & Review Mode
+## Sprint 3.2 — `DraftValidator` & Review Mode
 
 * **Create `DraftValidator`** that parses final markdown and matches every beat & subplot ID from outline to prose.
 * **Add CLI flag `--review-draft`** to invoke validator post‑draft; output a CSV of omissions for manual fix.
@@ -19,7 +19,7 @@
 
 ---
 
-### Sprint 3.3 — Metrics & Config
+## Sprint 3.3 — Metrics & Config
 
 * **Augment `CostLogger`** to aggregate stats per phase (outline vs draft) and print a summary table on completion.
 * **Introduce `novelist.config.json`** (validated by `project.schema.v1.json`) with knobs:

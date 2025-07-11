@@ -1,6 +1,6 @@
-## Phase 2 – Prompt Scaffolding & Guard‑rails (5 Sprints)
+# Phase 2 – Prompt Scaffolding & Guard‑rails (5 Sprints)
 
-### Sprint 2.1 — Subplot Service
+## Sprint 2.1 — Subplot Service
 
 * **Add `SubPlotGeneratorService`** with prompt template: *“Create exactly N subplot threads (IDs S1…SN) linked to the premise and characters.”*
 * **Augment schema**: top‑level `"subplots"` collection plus `subplotIds` on acts.
@@ -16,7 +16,7 @@
 
 ---
 
-### Sprint 2.3 — `ChapterContextBuilder`
+## Sprint 2.3 — `ChapterContextBuilder`
 
 * **Create utility** in `src/Novelist.DraftBuilder` that composes:
 
@@ -30,7 +30,7 @@
 
 ---
 
-### Sprint 2.4 — Prompt Checklist Upgrade
+## Sprint 2.4 — Prompt Checklist Upgrade
 
 * **Rewrite `DraftBuilderService.BuildPiecePrompt`** to:
 
@@ -42,8 +42,18 @@
 
 ---
 
-### Sprint 2.5 — Guard‑rail Enforcers
+## Sprint 2.5 — Guard‑rail Enforcers
 
 * **Extend `DuplicateDetector`** to work at paragraph granularity and raise retry if similarity > 85 % Jaccard (threshold informed by industry best practice) ([Medium][7]).
 * **Implement `BeatCoverageValidator`**: after each chapter piece is drafted, scan text and mark beats as “covered” using fuzzy match; retry piece (max 3) if beats remain uncovered.
 * **Functional verification**: skip a beat intentionally by editing prompt; ensure validator forces a retry.
+---
+
+[1]: https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/required-properties?utm_source=chatgpt.com "Require properties for deserialization - .NET | Microsoft Learn"
+[2]: https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection-usage?utm_source=chatgpt.com "Tutorial: Use dependency injection in .NET - Learn Microsoft"
+[3]: https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection?utm_source=chatgpt.com "Dependency injection - .NET | Microsoft Learn"
+[4]: https://www.easyagile.com/blog/agile-sprint-planning?utm_source=chatgpt.com "The Ultimate Agile Sprint Planning Guide [2024]"
+[5]: https://arxiv.org/html/2403.18958v1?utm_source=chatgpt.com "A State-of-the-practice Release-readiness Checklist for Generative ..."
+[6]: https://arxiv.org/html/2408.02205v1?utm_source=chatgpt.com "Towards AI-Safety-by-Design: A Taxonomy of Runtime Guardrails in ..."
+[7]: https://medium.com/freelancers-hub/i-tested-5-ai-detectors-heres-my-review-about-what-s-the-best-tool-for-2025-35a58eac86c5?utm_source=chatgpt.com "I Tested 30+ AI Detectors. These 9 are Best to Identify Generated Text."
+[8]: https://teamhood.com/project-management/sprint-in-project-management/?utm_source=chatgpt.com "Scrum Sprint Project Management: A Detailed Agile Workflow Guide"
